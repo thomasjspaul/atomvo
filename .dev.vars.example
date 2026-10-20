@@ -1,0 +1,5 @@
+# Copy to .dev.vars (git-ignored) for local development.
+COHERE_API_KEY=your-cohere-key
+INGEST_SHARED_SECRET=generate-a-long-random-string
+# Skip Cloudflare Access for localhost requests. Local dev only — never set in wrangler.jsonc.
+DEV_BYPASS=1

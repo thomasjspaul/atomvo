@@ -1,0 +1,75 @@
+{
+  // Copy to wrangler.jsonc (git-ignored) and fill in the YOUR_* placeholders.
+  // For GitHub Actions deploys, paste the finished file into the WRANGLER_CONFIG
+  // secret instead — see README "Deploying with GitHub Actions".
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "food-tracker",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-08-30",
+  "compatibility_flags": ["nodejs_compat"],
+  // No public *.workers.dev URL — the Worker only answers on your custom domain,
+  // which sits behind Cloudflare Access.
+  "workers_dev": false,
+  "routes": [{ "pattern": "food.YOUR_DOMAIN.com", "custom_domain": true }],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "triggers": {
+    // minute hour day-of-month month day-of-week  (UTC)
+    // Daily target recompute: 09:00 UTC (after a morning Health Connect sync) —
+    // picks up synced weight / BMR. No-op when the target is unchanged.
+    // Daily photo purge: 09:15 UTC.
+    "crons": ["0 9 * * *", "15 9 * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "food-tracker-db",
+      // from `npx wrangler d1 create food-tracker-db`
+      "database_id": "YOUR_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "food-tracker-photos"
+    }
+  ],
+  "vars": {
+    // App timezone used for the 3 AM tracking-day rollover and coach time context.
+    "APP_TIMEZONE": "America/New_York",
+    "DAY_ROLLOVER_HOUR": "3",
+    // Cloudflare Access. The deployed Worker returns 503 until both are set.
+    "ACCESS_TEAM_DOMAIN": "https://YOUR_TEAM.cloudflareaccess.com",
+    "ACCESS_AUD": "YOUR_ACCESS_APPLICATION_AUD_TAG",
+    // Comma-separated allow-list; optional extra check on top of the Access policy.
+    "ALLOWED_EMAILS": "you@example.com",
+    // Contact for the Open Food Facts User-Agent (barcode lookups).
+    "OFF_CONTACT": "you@example.com",
+    // Default Cohere model for meal estimation / coaching (overridable in Settings).
+    "COHERE_MODEL": "command-a-plus-05-2026"
+  }
+
+  // Optional: more fully isolated instances (own Worker, D1, R2, Access app) as
+  // named environments. vars/bindings do NOT inherit, so redeclare everything:
+  //
+  // "env": {
+  //   "alex": {
+  //     "name": "food-tracker-alex",
+  //     "workers_dev": false,
+  //     "compatibility_flags": ["nodejs_compat"],
+  //     "assets": { "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
+  //     "observability": { "enabled": true },
+  //     "triggers": { "crons": ["0 9 * * *", "15 9 * * *"] },
+  //     "routes": [{ "pattern": "food.ALEX_DOMAIN.com", "custom_domain": true }],
+  //     "d1_databases": [{ "binding": "DB", "database_name": "food-tracker-alex-db", "database_id": "...", "migrations_dir": "migrations" }],
+  //     "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "food-tracker-alex-photos" }],
+  //     "vars": { "APP_TIMEZONE": "...", "DAY_ROLLOVER_HOUR": "3", "ACCESS_TEAM_DOMAIN": "...", "ACCESS_AUD": "...", "ALLOWED_EMAILS": "...", "OFF_CONTACT": "...", "COHERE_MODEL": "command-a-plus-05-2026" }
+  //   }
+  // }
+}
