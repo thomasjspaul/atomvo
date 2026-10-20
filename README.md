@@ -98,12 +98,16 @@ committed. Instead, the workflow writes it from a secret.
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
    - `WRANGLER_CONFIG`: the full contents of your `wrangler.jsonc`
-3. Settings → Secrets and variables → Actions → **Variables** → add `DEPLOY_TARGETS`:
-   ```json
-   [{"env":"","name":"Atomvo"}]
-   ```
-   Add one entry for each wrangler environment you want deployed (see below). The workflow
-   doesn't run at all until this variable is set.
+   - `DEPLOY_TARGETS`: the instances to deploy, for example
+     ```json
+     [{"env":"","name":"Atomvo"}]
+     ```
+     Add one entry for each wrangler environment you want deployed (see below). The workflow
+     skips deploying until this secret is set, so forks never try to deploy.
+
+If your repo is public, its Actions logs are public too. The workflow keeps instance names,
+app names and wrangler output out of the logs unless a step fails. If a run fails, check its
+log and delete the run if it shows anything you'd rather keep private.
 
 Each run applies D1 migrations, builds and deploys every target. To change your config, update
 the `WRANGLER_CONFIG` secret. Keep a copy of the file somewhere safe, because GitHub won't show
@@ -122,7 +126,7 @@ template.
    `env.<name>.vars.ACCESS_AUD`. Add the Bypass apps described in step 2 above.
 4. Secrets: `npx cross-env CLOUDFLARE_ENV=<name> wrangler secret put COHERE_API_KEY` (and the
    same for `INGEST_SHARED_SECRET`).
-5. Add `{"env":"<name>","name":"<App name>"}` to `DEPLOY_TARGETS`. To deploy by hand instead,
+5. Add `{"env":"<name>","name":"<App name>"}` to the `DEPLOY_TARGETS` secret. To deploy by hand instead,
    run `npx cross-env CLOUDFLARE_ENV=<name> VITE_APP_NAME="<App name>" npm run deploy`.
 
 ## Auto weight sync (Health Connect)
