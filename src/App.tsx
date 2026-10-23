@@ -1,5 +1,5 @@
 import { createContext, lazy, Suspense, useContext, useState, type ReactNode } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router";
 import { BottomNav } from "./components/BottomNav";
 import { LogMealSheet } from "./screens/LogMeal";
 import { Today } from "./screens/Today";

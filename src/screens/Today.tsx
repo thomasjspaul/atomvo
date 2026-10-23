@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useDay, useSettings } from "../lib/queries";
 import { Ring } from "../components/Ring";
 import { EntryRow } from "../components/EntryRow";

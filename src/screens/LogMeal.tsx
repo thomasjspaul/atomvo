@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import { api, ApiError } from "../api";
 import { useFavourites, useInvalidateAll, useLogFavourite, useLogMeal } from "../lib/queries";
