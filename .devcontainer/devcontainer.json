@@ -1,0 +1,20 @@
+{
+  "name": "Atomvo",
+  // Node 22 matches the deploy workflow.
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  // Optional Codespaces secrets. Without them the setup script falls back to the
+  // example files, which are fine for local development.
+  "secrets": {
+    "ATOMVO_WRANGLER_CONFIG": {
+      "description": "Full contents of your wrangler.jsonc (personal deploy config)."
+    },
+    "ATOMVO_DEV_VARS": {
+      "description": "Full contents of your .dev.vars (local secrets)."
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": { "label": "Vite dev server" }
+  }
+}

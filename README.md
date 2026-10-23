@@ -43,6 +43,10 @@ npm run db:seed:local                            # optional demo data
 npm run dev                                      # http://localhost:5173
 ```
 
+In GitHub Codespaces, `.devcontainer/` does the first four steps for you. It writes
+`wrangler.jsonc` and `.dev.vars` from the optional `ATOMVO_WRANGLER_CONFIG` and
+`ATOMVO_DEV_VARS` Codespaces secrets, or copies the example files if they aren't set.
+
 With `DEV_BYPASS=1` in `.dev.vars`, requests to localhost skip Cloudflare Access and use a dev
 identity. Requests to any other hostname never skip Access.
 
