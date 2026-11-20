@@ -2,6 +2,10 @@
   "name": "Atomvo",
   // Node 22 matches the deploy workflow.
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  // gh CLI: Dependabot alert checks and pushing the dotfiles repo (Claude memory).
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   // Optional Codespaces secrets. Without them the setup script falls back to the
   // example files, which are fine for local development.
   "secrets": {
