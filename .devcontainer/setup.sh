@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Runs once when a codespace (or dev container) is created.
 # Writes the git-ignored config files from Codespaces secrets, falling back to the
-# example files, then installs dependencies and prepares the local database.
-# Existing files are never overwritten, so a rebuild keeps local edits.
+# example files, then installs dependencies. Existing files are never overwritten,
+# so a rebuild keeps local edits.
+# It deliberately doesn't create or migrate a local D1 database: that has stalled
+# codespace creation. Run `npm run db:migrate:local` by hand if you want to test locally.
 set -euo pipefail
 
 write_config() { # <file> <secret value> <example file>
@@ -21,6 +23,3 @@ write_config wrangler.jsonc "${ATOMVO_WRANGLER_CONFIG:-}" wrangler.example.jsonc
 write_config .dev.vars "${ATOMVO_DEV_VARS:-}" .dev.vars.example
 
 npm ci
-# CI=true stops wrangler asking "continue? (Y/n)", which would hang setup.
-# --local only touches the SQLite file wrangler creates under .wrangler/state.
-CI=true npm run db:migrate:local

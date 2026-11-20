@@ -43,7 +43,8 @@ npm run db:seed:local                            # optional demo data
 npm run dev                                      # http://localhost:5173
 ```
 
-In GitHub Codespaces, `.devcontainer/` does the first four steps for you. It writes
+In GitHub Codespaces, `.devcontainer/` does the first three steps for you (run the migrations yourself if you want
+to test locally). It writes
 `wrangler.jsonc` and `.dev.vars` from the optional `ATOMVO_WRANGLER_CONFIG` and
 `ATOMVO_DEV_VARS` Codespaces secrets, or copies the example files if they aren't set.
 
