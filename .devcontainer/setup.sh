@@ -21,4 +21,6 @@ write_config wrangler.jsonc "${ATOMVO_WRANGLER_CONFIG:-}" wrangler.example.jsonc
 write_config .dev.vars "${ATOMVO_DEV_VARS:-}" .dev.vars.example
 
 npm ci
-npm run db:migrate:local
+# CI=true stops wrangler asking "continue? (Y/n)", which would hang setup.
+# --local only touches the SQLite file wrangler creates under .wrangler/state.
+CI=true npm run db:migrate:local
