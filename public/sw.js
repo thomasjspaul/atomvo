@@ -1,5 +1,5 @@
 // Minimal offline shell. API calls are always network-only.
-const CACHE = "fuel-v3";
+const CACHE = "fuel-v4";
 const SHELL = ["/", "/pwa/manifest.webmanifest", "/pwa/icon-192.png"];
 
 self.addEventListener("install", (e) => {
