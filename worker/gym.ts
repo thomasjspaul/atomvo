@@ -593,16 +593,21 @@ export async function enrichSessionExercise(
 
   if (ex.catalog_id) {
     const cat = await env.DB.prepare(
-      "SELECT canonical_name, description FROM exercise_catalog WHERE id = ?",
+      "SELECT canonical_name, description, secondary_muscles_json FROM exercise_catalog WHERE id = ?",
     )
       .bind(ex.catalog_id)
-      .first<{ canonical_name: string; description: string | null }>();
-    if (!cat || cat.description) return false;
+      .first<{
+        canonical_name: string;
+        description: string | null;
+        secondary_muscles_json: string | null;
+      }>();
+    // AI-picked exercises arrive with a description but no secondary muscles yet.
+    if (!cat || (cat.description && cat.secondary_muscles_json != null)) return false;
     const e = await enrichExercise(env, { name: cat.canonical_name, model });
     if (!e) return false;
     await env.DB.prepare(
       `UPDATE exercise_catalog
-          SET description = ?, secondary_muscles_json = ?,
+          SET description = COALESCE(description, ?), secondary_muscles_json = ?,
               primary_muscle = COALESCE(primary_muscle, ?)
         WHERE id = ?`,
     )

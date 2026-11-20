@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppContext } from "../env";
 import type {
+  ExerciseCatalogItem,
   ExerciseCatalogRef,
   ExercisePickGroup,
   ExerciseSuggestion,
@@ -22,6 +23,8 @@ import { MUSCLES, suggestExercises, type ExerciseSuggestionAI } from "../ai";
 export const exercises = new Hono<AppContext>();
 
 const SUGGEST_TTL_MS = 30 * 86_400_000;
+// "Found nothing" is only remembered briefly, so a miss doesn't stick for a month.
+const SUGGEST_MISS_TTL_MS = 86_400_000;
 
 async function catalogSearch(
   env: AppContext["Bindings"],
@@ -96,6 +99,7 @@ async function resolveAiSuggestions(
             equipment: a.equipment,
             from_ai: true,
             alternatives: a.alternatives,
+            description: a.description,
           },
     );
   }
@@ -107,30 +111,38 @@ async function cachedAiSuggestions(
   env: AppContext["Bindings"],
   opts: { cacheKey: string; query: string; known: string[]; limit: number; muscle?: boolean },
 ): Promise<ExerciseSuggestion[]> {
+  // v2: prompt now keeps the user's specifics and adds descriptions — don't
+  // serve answers cached under the old prompt.
+  const cacheKey = `v2:${opts.cacheKey}`;
   const cached = await env.DB.prepare(
     "SELECT found, payload, fetched_at FROM exercise_suggest_cache WHERE query = ?",
   )
-    .bind(opts.cacheKey)
+    .bind(cacheKey)
     .first<{ found: number; payload: string | null; fetched_at: string }>();
-  if (cached && Date.now() - Date.parse(cached.fetched_at) < SUGGEST_TTL_MS) {
+  const ttl = cached?.found ? SUGGEST_TTL_MS : SUGGEST_MISS_TTL_MS;
+  if (cached && Date.now() - Date.parse(cached.fetched_at) < ttl) {
     return cached.found && cached.payload
       ? (JSON.parse(cached.payload) as ExerciseSuggestion[])
       : [];
   }
   const s = await getSettings(env);
-  const aiRaw = await suggestExercises(env, {
+  const base = {
     query: opts.query,
     known: opts.known,
     model: s.cohere_model,
     limit: opts.limit,
     muscle: opts.muscle,
-  });
+  };
+  let aiRaw = await suggestExercises(env, base);
+  // Nothing recognised? Widen the net: described movements, rehab/mobility,
+  // sport drills, classes, brand or machine names.
+  if (!aiRaw.length && !opts.muscle) aiRaw = await suggestExercises(env, { ...base, wide: true });
   const ai = await resolveAiSuggestions(env, aiRaw);
   await env.DB.prepare(
     `INSERT INTO exercise_suggest_cache (query, found, payload, fetched_at) VALUES (?,?,?,?)
      ON CONFLICT (query) DO UPDATE SET found = excluded.found, payload = excluded.payload, fetched_at = excluded.fetched_at`,
   )
-    .bind(opts.cacheKey, ai.length ? 1 : 0, ai.length ? JSON.stringify(ai) : null, nowIso())
+    .bind(cacheKey, ai.length ? 1 : 0, ai.length ? JSON.stringify(ai) : null, nowIso())
     .run();
   return ai;
 }
@@ -145,7 +157,8 @@ function rowToSuggestion(r: Record<string, unknown>): ExerciseSuggestion {
   };
 }
 
-// GET /api/exercises?q=&limit=8 — seeded catalog first, Cohere fills the gap (cached).
+// GET /api/exercises?q=&limit=8&ai=1 — seeded catalog first, Cohere fills the
+// gap (cached). ai=1 (an explicit "search with AI" tap) always asks the AI.
 exercises.get("/", async (c) => {
   const q = (c.req.query("q") || "").trim();
   const limit = Math.min(20, Math.max(1, Number(c.req.query("limit") || "8")));
@@ -157,7 +170,8 @@ exercises.get("/", async (c) => {
   // uncached) — only pay for it when the local catalog genuinely came up
   // short, not just short of a full page of `limit` results.
   const AI_TRIGGER_MAX = Math.min(3, limit);
-  if (catalog.length >= AI_TRIGGER_MAX || !c.env.COHERE_API_KEY) {
+  const forceAi = c.req.query("ai") === "1";
+  if ((!forceAi && catalog.length >= AI_TRIGGER_MAX) || !c.env.COHERE_API_KEY) {
     return c.json({ suggestions: catalog, source: "catalog" });
   }
 
@@ -168,9 +182,12 @@ exercises.get("/", async (c) => {
     limit,
   });
 
-  const seen = new Set(catalog.map((x) => x.canonical_name.toLowerCase()));
-  const merged = [...catalog];
-  for (const s of ai) {
+  // On an explicit AI search, the AI's reading of the query leads.
+  const first = forceAi ? ai : catalog;
+  const second = forceAi ? catalog : ai;
+  const seen = new Set<string>();
+  const merged: ExerciseSuggestion[] = [];
+  for (const s of [...first, ...second]) {
     if (merged.length >= limit) break;
     const key = s.canonical_name.toLowerCase();
     if (seen.has(key)) continue;
@@ -289,8 +306,34 @@ exercises.get("/pick-groups", async (c) => {
   return c.json({ groups });
 });
 
-// GET /api/exercises/by-muscle?muscle=chest — exercises for one muscle group:
-// the ones already done first (most recent first), then the catalog, then AI ideas.
+// GET /api/exercises/catalog — the whole catalog in one go (a few hundred rows),
+// with when each was last done. The add-exercise sheet searches and filters this
+// in the browser, so typing and picking a body area never wait on the network.
+exercises.get("/catalog", async (c) => {
+  const rows = await c.env.DB.prepare(
+    `SELECT ec.id, ec.canonical_name, ec.norm_name, ec.aliases_json,
+            ec.primary_muscle, ec.equipment, ec.is_seed,
+            (SELECT MAX(s.tracking_date) FROM workout_exercises we
+               JOIN workout_sessions s ON s.id = we.session_id
+              WHERE we.catalog_id = ec.id) AS last_done
+       FROM exercise_catalog ec`,
+  ).all<Record<string, unknown>>();
+  const exercises: ExerciseCatalogItem[] = rows.results.map((r) => ({
+    id: String(r.id),
+    name: String(r.canonical_name),
+    norm: String(r.norm_name),
+    aliases: jsonStringArray(r.aliases_json).map(normalizeExerciseName),
+    muscle: r.primary_muscle == null ? null : String(r.primary_muscle),
+    equipment: r.equipment == null ? null : String(r.equipment),
+    seed: Number(r.is_seed) === 1,
+    last_done: r.last_done == null ? null : String(r.last_done),
+  }));
+  return c.json({ exercises });
+});
+
+// GET /api/exercises/by-muscle?muscle=chest&ai=1 — exercises for one muscle group:
+// the ones already done first (most recent first), then the catalog. AI ideas
+// only with ai=1 (an explicit "more ideas" tap) — it's the slow part.
 exercises.get("/by-muscle", async (c) => {
   const muscle = (c.req.query("muscle") || "").trim().toLowerCase();
   if (!(MUSCLES as readonly string[]).includes(muscle)) {
@@ -311,7 +354,8 @@ exercises.get("/by-muscle", async (c) => {
     .all<Record<string, unknown>>();
   const catalog = rows.results.map(rowToSuggestion);
 
-  const ai = c.env.COHERE_API_KEY
+  const ai =
+    c.req.query("ai") === "1" && c.env.COHERE_API_KEY
     ? await cachedAiSuggestions(c.env, {
         cacheKey: `muscle:${muscle}`,
         query: muscle,
@@ -407,8 +451,8 @@ exercises.post("/", async (c) => {
 
   await c.env.DB.prepare(
     `INSERT INTO exercise_catalog
-       (id, canonical_name, norm_name, aliases_json, primary_muscle, equipment, category, howto_query, alt_ids_json, is_seed, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?,0,?)`,
+       (id, canonical_name, norm_name, aliases_json, primary_muscle, equipment, category, howto_query, alt_ids_json, description, is_seed, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,0,?)`,
   )
     .bind(
       id,
@@ -420,6 +464,7 @@ exercises.post("/", async (c) => {
       b.category ? String(b.category) : null,
       b.howto_query ? String(b.howto_query) : null,
       altIdsJson,
+      b.description ? String(b.description).slice(0, 300) : null,
       nowIso(),
     )
     .run();

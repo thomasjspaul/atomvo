@@ -1,4 +1,9 @@
-import type { ExercisePerformedSet, WorkoutSessionDetail, WorkoutTemplateItem } from "../types";
+import type {
+  ExerciseCatalogItem,
+  ExercisePerformedSet,
+  WorkoutSessionDetail,
+  WorkoutTemplateItem,
+} from "../types";
 import { kgToLb, lbToKg, relativeDay, round } from "./format";
 import { todayISO } from "./day";
 
@@ -98,6 +103,92 @@ export function howToUrl(nameOrQuery: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(
     `how to ${nameOrQuery}`,
   )}`;
+}
+
+/** Equipment vocabulary used by the exercise catalog. */
+export const EQUIPMENT = [
+  "barbell",
+  "dumbbell",
+  "kettlebell",
+  "cable",
+  "machine",
+  "smith",
+  "bodyweight",
+  "band",
+  "other",
+] as const;
+
+export const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+/** Mirrors normalizeExerciseName in worker/util.ts. */
+export function normalizeExerciseName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^the /, "");
+}
+
+// Common shorthand people type in the gym → catalog wording.
+const SHORTHAND: Record<string, string> = {
+  db: "dumbbell",
+  bb: "barbell",
+  kb: "kettlebell",
+  ohp: "overhead press",
+  rdl: "romanian deadlift",
+  bw: "bodyweight",
+  tri: "triceps",
+  tricep: "triceps",
+  bicep: "biceps",
+};
+
+/** Does every query word start a word in `text`? ("inc db pr" → "incline dumbbell press") */
+function wordsMatch(qWords: string[], text: string): boolean {
+  const words = text.split(" ");
+  return qWords.every((q) => words.some((w) => w.startsWith(q)));
+}
+
+/**
+ * Instant in-browser search of the exercise catalog. Matches whole query
+ * words as word prefixes in the name or any alias, so word order and
+ * abbreviations don't matter. Exercises you've done float to the top.
+ */
+export function searchExerciseCatalog(
+  catalog: ExerciseCatalogItem[],
+  query: string,
+  opts: { muscle?: string | null; equipment?: string | null; limit?: number } = {},
+): ExerciseCatalogItem[] {
+  const norm = normalizeExerciseName(query);
+  const qWords = norm
+    .split(" ")
+    .filter(Boolean)
+    .flatMap((w) => (SHORTHAND[w] ?? w).split(" "));
+  const scored: { e: ExerciseCatalogItem; score: number }[] = [];
+  for (const e of catalog) {
+    if (opts.muscle && e.muscle !== opts.muscle) continue;
+    if (opts.equipment && e.equipment !== opts.equipment) continue;
+    let score: number;
+    if (!qWords.length) score = 5;
+    else if (e.norm === norm) score = 0;
+    else if (e.aliases.includes(norm)) score = 1;
+    else if (e.norm.startsWith(norm)) score = 2;
+    else if (wordsMatch(qWords, e.norm)) score = 3;
+    else if (e.aliases.some((a) => a.startsWith(norm) || wordsMatch(qWords, a))) score = 4;
+    else if (norm.length >= 3 && e.norm.includes(norm)) score = 5;
+    else continue;
+    scored.push({ e, score });
+  }
+  scored.sort(
+    (a, b) =>
+      a.score - b.score ||
+      (b.e.last_done ?? "").localeCompare(a.e.last_done ?? "") ||
+      a.e.name.length - b.e.name.length ||
+      a.e.name.localeCompare(b.e.name),
+  );
+  const out = scored.map((x) => x.e);
+  return opts.limit ? out.slice(0, opts.limit) : out;
 }
 
 /** Muscle-group vocabulary; mirrors MUSCLES in worker/ai.ts. */

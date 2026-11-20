@@ -336,6 +336,19 @@ export interface ExerciseSuggestion {
   equipment: string | null;
   from_ai: boolean;
   alternatives?: string[]; // AI-only rows: substitute exercise names, used on canonicalise
+  description?: string | null; // AI-only rows: one-line how-to, saved on canonicalise
+}
+
+/** One row of GET /api/exercises/catalog, searched in the browser. */
+export interface ExerciseCatalogItem {
+  id: string;
+  name: string;
+  norm: string; // normalizeExerciseName(name)
+  aliases: string[]; // already normalized
+  muscle: string | null;
+  equipment: string | null;
+  seed: boolean;
+  last_done: string | null; // tracking_date
 }
 
 export interface ExerciseSuggestResponse {

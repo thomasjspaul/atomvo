@@ -4,6 +4,7 @@ import type {
   ActiveWorkoutResponse,
   DayResponse,
   ExerciseCatalogEntry,
+  ExerciseCatalogItem,
   ExercisePickGroupsResponse,
   MuscleBalanceResponse,
   ExerciseProgressResponse,
@@ -292,15 +293,36 @@ export function useExercisePickGroups() {
   });
 }
 
-export function useExercisesByMuscle(muscle: string | null) {
+/** The whole exercise catalog, searched and filtered in the browser. */
+export function useExerciseCatalog() {
+  return useQuery({
+    queryKey: ["exercise-catalog"],
+    queryFn: () => api.get<{ exercises: ExerciseCatalogItem[] }>("/api/exercises/catalog"),
+    staleTime: 30 * 60_000,
+  });
+}
+
+/** AI exercise ideas for a typed search. Only runs when `enabled` (an explicit tap). */
+export function useExerciseAiSearch(q: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["exercise-suggest", "ai", q],
+    queryFn: () =>
+      api.get<ExerciseSuggestResponse>(`/api/exercises?q=${encodeURIComponent(q)}&ai=1`),
+    enabled: enabled && q.trim().length >= 2,
+    staleTime: 30 * 60_000,
+  });
+}
+
+/** AI exercise ideas for one muscle group. Only runs when `enabled` (an explicit tap). */
+export function useExercisesByMuscleAi(muscle: string | null, enabled: boolean) {
   return useQuery({
     queryKey: ["exercise-by-muscle", muscle],
     queryFn: () =>
       api.get<ExerciseSuggestResponse>(
-        `/api/exercises/by-muscle?muscle=${encodeURIComponent(muscle ?? "")}`,
+        `/api/exercises/by-muscle?muscle=${encodeURIComponent(muscle ?? "")}&ai=1`,
       ),
-    enabled: !!muscle,
-    staleTime: 5 * 60_000,
+    enabled: enabled && !!muscle,
+    staleTime: 30 * 60_000,
   });
 }
 
@@ -387,6 +409,7 @@ export function useAddSessionExercise() {
     onSuccess: (session) => {
       sync(session);
       qc.invalidateQueries({ queryKey: ["exercise-recent"] });
+      qc.invalidateQueries({ queryKey: ["exercise-catalog"] });
       // Fill in description + muscle groups in the background. Refetch rather
       // than write the response into the cache: a set logged while the AI was
       // thinking would otherwise be clobbered by the older snapshot.
@@ -587,8 +610,10 @@ export function useCanonicalizeExercise() {
       equipment?: string | null;
       category?: string | null;
       alternatives?: string[];
+      description?: string | null;
     }) => api.post<ExerciseCatalogEntry>("/api/exercises", body),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["exercise-catalog"] });
       qc.invalidateQueries({ queryKey: ["exercise-suggest"] });
       qc.invalidateQueries({ queryKey: ["exercise-recent"] });
     },

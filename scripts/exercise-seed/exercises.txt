@@ -1,0 +1,320 @@
+# Source list for migrations/0019_exercise_catalog_more.sql (built by build.mjs).
+# Name | primary muscle | equipment | category | aliases (; separated)
+# Muscles: chest back shoulders biceps triceps forearms core quads hamstrings glutes calves cardio
+# Equipment: barbell dumbbell kettlebell cable machine smith bodyweight band other
+
+## chest
+Decline Barbell Bench Press | chest | barbell | compound | decline bench press;decline bench
+Decline Dumbbell Press | chest | dumbbell | compound | decline db press
+Floor Press | chest | barbell | compound | barbell floor press
+Dumbbell Floor Press | chest | dumbbell | compound | db floor press
+Smith Machine Bench Press | chest | smith | compound | smith bench press;smith machine bench
+Smith Machine Incline Press | chest | smith | compound | smith incline bench;smith incline press
+Incline Machine Chest Press | chest | machine | compound | incline chest press machine;incline machine press
+Hammer Strength Chest Press | chest | machine | compound | plate loaded chest press;iso lateral chest press
+Dumbbell Fly | chest | dumbbell | isolation | dumbbell flye;db fly;flat dumbbell fly;chest fly
+Incline Dumbbell Fly | chest | dumbbell | isolation | incline db fly;incline flye
+Pec Deck | chest | machine | isolation | pec deck fly;machine fly;butterfly;chest fly machine
+Low-to-High Cable Fly | chest | cable | isolation | low cable fly;cable fly low to high
+High-to-Low Cable Fly | chest | cable | isolation | high cable fly;cable fly high to low
+Incline Cable Fly | chest | cable | isolation | incline cable flye
+Cable Chest Press | chest | cable | compound | standing cable chest press
+Incline Push-Up | chest | bodyweight | compound | incline pushup;elevated push up
+Decline Push-Up | chest | bodyweight | compound | decline pushup;feet elevated push up
+Wide-Grip Push-Up | chest | bodyweight | compound | wide pushup
+Weighted Push-Up | chest | bodyweight | compound | plate push up
+Svend Press | chest | other | isolation | plate squeeze press;plate press
+Dumbbell Pullover | chest | dumbbell | compound | pullover;db pullover
+Landmine Press | chest | barbell | compound | landmine chest press
+Resistance Band Chest Press | chest | band | compound | band chest press
+Band Chest Fly | chest | band | isolation | resistance band fly
+
+## back
+Pendlay Row | back | barbell | compound | dead stop row
+Yates Row | back | barbell | compound | underhand barbell row;reverse grip row
+Dumbbell Row | back | dumbbell | compound | bent over dumbbell row;two arm dumbbell row
+Kroc Row | back | dumbbell | compound | heavy dumbbell row
+Meadows Row | back | barbell | compound | landmine row one arm
+Landmine Row | back | barbell | compound | landmine t bar row
+Seal Row | back | barbell | compound | barbell seal row
+Chest-Supported Dumbbell Row | back | dumbbell | compound | incline dumbbell row;incline bench row
+Machine Row | back | machine | compound | seated machine row;iso lateral row;hammer strength row
+Smith Machine Row | back | smith | compound | smith row
+Inverted Row | back | bodyweight | compound | bodyweight row;australian pull up;ring row
+Single-Arm Cable Row | back | cable | compound | one arm cable row
+Wide-Grip Seated Cable Row | back | cable | compound | wide grip cable row
+Close-Grip Lat Pulldown | back | cable | compound | v bar pulldown;close grip pulldown
+Wide-Grip Lat Pulldown | back | cable | compound | wide grip pulldown
+Underhand Lat Pulldown | back | cable | compound | reverse grip pulldown;supinated pulldown
+Single-Arm Lat Pulldown | back | cable | compound | one arm pulldown
+Machine Lat Pulldown | back | machine | compound | plate loaded pulldown
+Straight-Arm Pulldown | back | cable | isolation | straight arm pushdown;lat pushdown;cable pullover
+Assisted Pull-Up | back | machine | compound | assisted pullup machine;gravitron
+Band-Assisted Pull-Up | back | band | compound | banded pull up
+Weighted Pull-Up | back | bodyweight | compound | weighted pullup
+Neutral-Grip Pull-Up | back | bodyweight | compound | hammer grip pull up;parallel grip pull up
+Weighted Chin-Up | back | bodyweight | compound | weighted chinup
+Negative Pull-Up | back | bodyweight | compound | eccentric pull up
+Dumbbell Shrug | back | dumbbell | isolation | db shrug
+Trap Bar Shrug | back | barbell | isolation | hex bar shrug
+Smith Machine Shrug | back | smith | isolation | smith shrug
+Cable Shrug | back | cable | isolation |
+Trap Bar Deadlift | back | barbell | compound | hex bar deadlift
+Deficit Deadlift | back | barbell | compound |
+Snatch-Grip Deadlift | back | barbell | compound | snatch grip deadlift
+Back Extension | back | bodyweight | isolation | hyperextension;45 degree back extension;roman chair
+Weighted Back Extension | back | bodyweight | isolation | weighted hyperextension
+Reverse Hyperextension | back | machine | isolation | reverse hyper
+Superman | back | bodyweight | isolation | superman hold
+Rack Chin | back | bodyweight | compound |
+Band Pull-Apart | back | band | isolation | pull apart;band pull apart
+Resistance Band Row | back | band | compound | band row
+Renegade Row | back | dumbbell | compound | plank row
+Kettlebell Row | back | kettlebell | compound | kb row
+Gorilla Row | back | kettlebell | compound | kettlebell gorilla row
+
+## shoulders
+Seated Barbell Overhead Press | shoulders | barbell | compound | seated military press;seated barbell press
+Push Press | shoulders | barbell | compound | barbell push press
+Standing Dumbbell Shoulder Press | shoulders | dumbbell | compound | standing db press
+Single-Arm Dumbbell Shoulder Press | shoulders | dumbbell | compound | one arm shoulder press
+Smith Machine Shoulder Press | shoulders | smith | compound | smith overhead press;smith military press
+Behind-the-Neck Press | shoulders | barbell | compound | btn press
+Z Press | shoulders | barbell | compound | seated floor press overhead
+Landmine Shoulder Press | shoulders | barbell | compound | single arm landmine press
+Kettlebell Overhead Press | shoulders | kettlebell | compound | kb press;kettlebell press
+Pike Push-Up | shoulders | bodyweight | compound | pike pushup
+Handstand Push-Up | shoulders | bodyweight | compound | hspu;wall handstand push up
+Machine Lateral Raise | shoulders | machine | isolation | lateral raise machine
+Seated Lateral Raise | shoulders | dumbbell | isolation | seated side raise
+Lean-Away Lateral Raise | shoulders | dumbbell | isolation | leaning lateral raise
+Band Lateral Raise | shoulders | band | isolation | resistance band lateral raise
+Cable Front Raise | shoulders | cable | isolation |
+Plate Front Raise | shoulders | other | isolation | plate raise
+Barbell Front Raise | shoulders | barbell | isolation |
+Upright Row | shoulders | barbell | compound | barbell upright row
+Dumbbell Upright Row | shoulders | dumbbell | compound | db upright row
+Cable Upright Row | shoulders | cable | compound |
+Reverse Pec Deck | shoulders | machine | isolation | rear delt machine;reverse fly machine;rear delt pec deck
+Cable Rear Delt Fly | shoulders | cable | isolation | cable reverse fly;cable rear delt
+Bent-Over Rear Delt Raise | shoulders | dumbbell | isolation | bent over reverse fly
+Rear Delt Row | shoulders | dumbbell | compound | rear delt dumbbell row
+Y Raise | shoulders | dumbbell | isolation | incline y raise;prone y raise
+Cuban Press | shoulders | dumbbell | compound |
+External Rotation | shoulders | cable | isolation | cable external rotation;rotator cuff external rotation
+Internal Rotation | shoulders | cable | isolation | cable internal rotation
+Dumbbell External Rotation | shoulders | dumbbell | isolation | side lying external rotation
+Band External Rotation | shoulders | band | isolation |
+Overhead Band Press | shoulders | band | compound | band shoulder press
+Kettlebell Halo | shoulders | kettlebell | isolation | halo
+Turkish Get-Up | shoulders | kettlebell | compound | tgu;get up
+
+## biceps
+EZ-Bar Curl | biceps | barbell | isolation | ez curl;ez bar bicep curl
+Reverse Curl | biceps | barbell | isolation | reverse barbell curl;reverse grip curl
+Drag Curl | biceps | barbell | isolation | barbell drag curl
+Spider Curl | biceps | dumbbell | isolation | prone incline curl
+Concentration Curl | biceps | dumbbell | isolation | seated concentration curl
+Zottman Curl | biceps | dumbbell | isolation |
+Cross-Body Hammer Curl | biceps | dumbbell | isolation | cross body curl;pinwheel curl
+Dumbbell Preacher Curl | biceps | dumbbell | isolation | single arm preacher curl
+EZ-Bar Preacher Curl | biceps | barbell | isolation |
+Machine Bicep Curl | biceps | machine | isolation | bicep curl machine;machine curl
+Rope Hammer Curl | biceps | cable | isolation | cable hammer curl;cable rope curl
+Bayesian Curl | biceps | cable | isolation | behind the body cable curl
+High Cable Curl | biceps | cable | isolation | overhead cable curl;double biceps cable curl
+Single-Arm Cable Curl | biceps | cable | isolation | one arm cable curl
+Band Curl | biceps | band | isolation | resistance band curl
+Kettlebell Curl | biceps | kettlebell | isolation | kb curl
+Chin-Up Hold | biceps | bodyweight | isolation | flexed arm hang
+
+## triceps
+Close-Grip Push-Up | triceps | bodyweight | compound | diamond push up;diamond pushup;triangle push up
+JM Press | triceps | barbell | compound |
+Dumbbell Skull Crusher | triceps | dumbbell | isolation | dumbbell lying triceps extension
+Overhead Cable Triceps Extension | triceps | cable | isolation | cable overhead extension;rope overhead extension
+Single-Arm Overhead Dumbbell Extension | triceps | dumbbell | isolation | one arm overhead extension
+Seated EZ-Bar Overhead Extension | triceps | barbell | isolation | ez bar french press
+Straight-Bar Pushdown | triceps | cable | isolation | bar pushdown;v bar pushdown
+Reverse-Grip Pushdown | triceps | cable | isolation | underhand pushdown
+Single-Arm Cable Pushdown | triceps | cable | isolation | one arm pushdown
+Cable Kickback (Triceps) | triceps | cable | isolation | cable triceps kickback
+Machine Triceps Extension | triceps | machine | isolation | tricep extension machine
+Machine Dip | triceps | machine | compound | seated dip machine;assisted dip
+Tate Press | triceps | dumbbell | isolation |
+Smith Machine Close-Grip Bench | triceps | smith | compound | smith close grip
+Band Triceps Pushdown | triceps | band | isolation | band pushdown
+Bench Dip | triceps | bodyweight | compound | chair dip
+
+## forearms
+Wrist Curl | forearms | barbell | isolation | barbell wrist curl;forearm curl
+Dumbbell Wrist Curl | forearms | dumbbell | isolation | db wrist curl
+Reverse Wrist Curl | forearms | barbell | isolation | wrist extension
+Behind-the-Back Wrist Curl | forearms | barbell | isolation |
+Farmer's Carry | forearms | dumbbell | compound | farmers walk;farmer walk;loaded carry
+Trap Bar Carry | forearms | barbell | compound | trap bar farmers walk
+Suitcase Carry | forearms | kettlebell | compound | single arm carry
+Plate Pinch | forearms | other | isolation | pinch grip hold
+Dead Hang | forearms | bodyweight | isolation | bar hang;hang
+Wrist Roller | forearms | other | isolation | forearm roller
+Grip Trainer | forearms | other | isolation | hand gripper;gripper
+Towel Pull-Up | forearms | bodyweight | compound | towel hang
+
+## core
+Bicycle Crunch | core | bodyweight | isolation | bicycle;bicycle kicks
+Reverse Crunch | core | bodyweight | isolation |
+Decline Sit-Up | core | bodyweight | isolation | decline crunch
+Machine Crunch | core | machine | isolation | ab crunch machine;ab machine
+V-Up | core | bodyweight | isolation | v sit up;jackknife
+Toes-to-Bar | core | bodyweight | isolation | toes to bar;t2b
+Lying Leg Raise | core | bodyweight | isolation | leg raise;floor leg raise
+Captain's Chair Knee Raise | core | machine | isolation | vertical knee raise;roman chair leg raise
+Hanging Knee Raise | core | bodyweight | isolation | knee raise
+Side Plank | core | bodyweight | isolation | lateral plank
+Hollow Hold | core | bodyweight | isolation | hollow body hold
+Dead Bug | core | bodyweight | isolation | deadbug
+Bird Dog | core | bodyweight | isolation | birddog
+Mountain Climber | core | bodyweight | isolation | mountain climbers
+Flutter Kicks | core | bodyweight | isolation | flutter kick
+Heel Taps | core | bodyweight | isolation | alternating heel touch
+L-Sit | core | bodyweight | isolation | l sit hold
+Dragon Flag | core | bodyweight | isolation |
+Woodchopper | core | cable | isolation | cable woodchop;wood chop;cable wood chopper
+Cable Oblique Twist | core | cable | isolation | standing cable twist
+Landmine Rotation | core | barbell | isolation | landmine twist;rainbow
+Dumbbell Side Bend | core | dumbbell | isolation | side bend;oblique bend
+Weighted Plank | core | bodyweight | isolation | plate plank
+Stir the Pot | core | other | isolation | stability ball stir the pot
+Stability Ball Crunch | core | other | isolation | swiss ball crunch;exercise ball crunch
+Stability Ball Pike | core | other | isolation | swiss ball pike
+Stability Ball Rollout | core | other | isolation | swiss ball rollout
+Kettlebell Windmill | core | kettlebell | isolation | windmill
+Copenhagen Plank | core | bodyweight | isolation | copenhagen adductor plank
+
+## quads
+Smith Machine Squat | quads | smith | compound | smith squat
+Box Squat | quads | barbell | compound |
+Pause Squat | quads | barbell | compound | paused squat
+Safety Bar Squat | quads | barbell | compound | ssb squat;safety squat bar
+Zercher Squat | quads | barbell | compound |
+Overhead Squat | quads | barbell | compound | ohs
+High-Bar Squat | quads | barbell | compound | high bar back squat
+Low-Bar Squat | quads | barbell | compound | low bar back squat
+Belt Squat | quads | machine | compound | belt squat machine
+Pendulum Squat | quads | machine | compound | pendulum squat machine
+V-Squat | quads | machine | compound | v squat machine
+Reverse Hack Squat | quads | machine | compound |
+Single-Leg Leg Press | quads | machine | compound | one leg leg press
+Single-Leg Leg Extension | quads | machine | isolation | one leg extension
+Dumbbell Squat | quads | dumbbell | compound | db squat
+Kettlebell Goblet Squat | quads | kettlebell | compound | kb goblet squat
+Heels-Elevated Goblet Squat | quads | dumbbell | compound | heel elevated squat
+Bodyweight Squat | quads | bodyweight | compound | air squat;squats
+Jump Squat | quads | bodyweight | compound | squat jump
+Pistol Squat | quads | bodyweight | compound | single leg squat
+Sissy Squat | quads | bodyweight | isolation |
+Wall Sit | quads | bodyweight | isolation | wall squat
+Split Squat | quads | dumbbell | compound | static lunge;dumbbell split squat
+Barbell Bulgarian Split Squat | quads | barbell | compound |
+Smith Machine Split Squat | quads | smith | compound | smith bulgarian split squat
+Forward Lunge | quads | dumbbell | compound | front lunge
+Reverse Lunge | quads | dumbbell | compound | dumbbell reverse lunge;back lunge
+Barbell Lunge | quads | barbell | compound | barbell walking lunge
+Bodyweight Lunge | quads | bodyweight | compound | lunges
+Lateral Lunge | quads | dumbbell | compound | side lunge
+Curtsy Lunge | glutes | dumbbell | compound |
+Box Jump | quads | bodyweight | compound | box jumps
+Barbell Step-Up | quads | barbell | compound |
+Cyclist Squat | quads | dumbbell | compound | narrow stance heels elevated squat
+Spanish Squat | quads | band | compound |
+Leg Press (Narrow Stance) | quads | machine | compound | close stance leg press
+Sled Push | quads | other | compound | prowler push;prowler
+Thrusters | quads | barbell | compound | barbell thruster;thruster
+Dumbbell Thruster | quads | dumbbell | compound | db thruster
+
+## hamstrings
+Dumbbell Romanian Deadlift | hamstrings | dumbbell | compound | db rdl;dumbbell rdl
+Single-Leg Romanian Deadlift | hamstrings | dumbbell | compound | single leg rdl;one leg rdl
+Kettlebell Romanian Deadlift | hamstrings | kettlebell | compound | kb rdl
+Smith Machine Romanian Deadlift | hamstrings | smith | compound | smith rdl
+Cable Romanian Deadlift | hamstrings | cable | compound | cable rdl;cable pull through rdl
+Standing Leg Curl | hamstrings | machine | isolation | single leg curl machine;standing hamstring curl
+Nordic Hamstring Curl | hamstrings | bodyweight | isolation | nordic curl;nordics
+Glute-Ham Raise | hamstrings | machine | isolation | ghr;glute ham raise
+Stability Ball Leg Curl | hamstrings | other | isolation | swiss ball hamstring curl;ball leg curl
+Slider Leg Curl | hamstrings | bodyweight | isolation | sliding leg curl
+Dumbbell Leg Curl | hamstrings | dumbbell | isolation | lying dumbbell hamstring curl
+Cable Leg Curl | hamstrings | cable | isolation | standing cable hamstring curl
+Kettlebell Swing | hamstrings | kettlebell | compound | kb swing;russian swing;american swing
+Single-Leg Kettlebell Deadlift | hamstrings | kettlebell | compound |
+Band Leg Curl | hamstrings | band | isolation |
+
+## glutes
+Machine Hip Thrust | glutes | machine | compound | hip thrust machine
+Smith Machine Hip Thrust | glutes | smith | compound | smith hip thrust
+Dumbbell Hip Thrust | glutes | dumbbell | compound |
+Single-Leg Hip Thrust | glutes | bodyweight | compound | single leg glute bridge
+Barbell Glute Bridge | glutes | barbell | compound |
+Frog Pump | glutes | bodyweight | isolation | frog pumps
+Hip Abduction Machine | glutes | machine | isolation | abductor machine;hip abduction;seated abduction
+Hip Adduction Machine | glutes | machine | isolation | adductor machine;hip adduction;inner thigh machine
+Cable Hip Abduction | glutes | cable | isolation | standing cable abduction
+Cable Pull-Through | glutes | cable | compound | pull through
+Glute Kickback Machine | glutes | machine | isolation | machine kickback
+Donkey Kick | glutes | bodyweight | isolation | donkey kicks
+Fire Hydrant | glutes | bodyweight | isolation | fire hydrants
+Banded Lateral Walk | glutes | band | isolation | lateral band walk;monster walk;side steps
+Banded Clamshell | glutes | band | isolation | clamshell;clam shell
+Band Glute Bridge | glutes | band | isolation |
+Sumo Squat | glutes | dumbbell | compound | dumbbell sumo squat;plie squat
+Kettlebell Sumo Deadlift | glutes | kettlebell | compound | kb sumo deadlift
+45-Degree Hip Extension | glutes | bodyweight | isolation | glute focused back extension
+B-Stance Hip Thrust | glutes | barbell | compound | b stance hip thrust
+Reverse Lunge (Deficit) | glutes | dumbbell | compound | deficit reverse lunge
+Step-Down | glutes | bodyweight | compound | lateral step down
+
+## calves
+Seated Dumbbell Calf Raise | calves | dumbbell | isolation |
+Single-Leg Calf Raise | calves | dumbbell | isolation | one leg calf raise
+Bodyweight Calf Raise | calves | bodyweight | isolation | standing calf raise bodyweight
+Smith Machine Calf Raise | calves | smith | isolation | smith calf raise
+Donkey Calf Raise | calves | machine | isolation |
+Hack Squat Calf Raise | calves | machine | isolation |
+Tibialis Raise | calves | bodyweight | isolation | tib raise;tibialis anterior raise
+Jump Rope | calves | other | cardio | skipping;skipping rope
+
+## cardio
+Outdoor Run | cardio | other | cardio | run;jog;jogging;running outdoors
+Treadmill Walk | cardio | machine | cardio | walking;treadmill walking
+Incline Treadmill Walk | cardio | machine | cardio | incline walk;12 3 30
+Walk | cardio | other | cardio | walking outdoors;hike
+Hike | cardio | other | cardio | hiking
+Outdoor Cycling | cardio | other | cardio | bike ride;road bike;cycling outdoors
+Spin Class | cardio | machine | cardio | spinning;peloton
+Recumbent Bike | cardio | machine | cardio | recumbent cycle
+Air Bike | cardio | machine | cardio | assault bike;echo bike;fan bike;airdyne
+Ski Erg | cardio | machine | cardio | skierg;ski machine
+Swimming | cardio | other | cardio | swim;laps
+Stairs | cardio | other | cardio | stair climbing;stadium stairs
+Burpee | cardio | bodyweight | cardio | burpees
+Jumping Jacks | cardio | bodyweight | cardio | jumping jack;star jumps
+High Knees | cardio | bodyweight | cardio |
+Battle Ropes | cardio | other | cardio | battle rope;rope waves
+Sled Drag | cardio | other | cardio | sled pull
+Rucking | cardio | other | cardio | ruck;weighted walk
+Sprints | cardio | other | cardio | sprint;hill sprints
+Rowing (Outdoor) | cardio | other | cardio | kayaking;canoeing
+Shadow Boxing | cardio | bodyweight | cardio | boxing
+Heavy Bag | cardio | other | cardio | punching bag;bag work
+Kettlebell Snatch | hamstrings | kettlebell | compound | kb snatch
+Kettlebell Clean and Press | shoulders | kettlebell | compound | kb clean and press
+Power Clean | quads | barbell | compound | clean;hang clean;hang power clean
+Clean and Jerk | quads | barbell | compound |
+Snatch | quads | barbell | compound | power snatch;hang snatch
+Wall Ball | quads | other | compound | wall balls;wall ball shot
+Medicine Ball Slam | core | other | compound | ball slam;slam ball
+Bear Crawl | core | bodyweight | compound |
+Yoga | cardio | other | cardio | vinyasa
+Pilates | core | other | isolation | reformer pilates
+Stretching | cardio | other | cardio | mobility;stretch
+Foam Rolling | cardio | other | cardio | foam roll

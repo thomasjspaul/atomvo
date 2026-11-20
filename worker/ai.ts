@@ -243,6 +243,7 @@ export interface ExerciseSuggestionAI {
   equipment: string | null;
   category: string | null;
   alternatives: string[];
+  description: string | null;
 }
 
 const EXERCISE_SUGGEST_SCHEMA = {
@@ -263,6 +264,7 @@ const EXERCISE_SUGGEST_SCHEMA = {
             equipment: { type: ["string", "null"] },
             category: { type: ["string", "null"] },
             alternatives: { type: "array", items: { type: "string" } },
+            description: { type: "string" },
           },
           required: [
             "canonical_name",
@@ -271,6 +273,7 @@ const EXERCISE_SUGGEST_SCHEMA = {
             "equipment",
             "category",
             "alternatives",
+            "description",
           ],
         },
       },
@@ -293,6 +296,8 @@ export async function suggestExercises(
     limit?: number;
     /** When set, `query` is a muscle group: suggest good exercises for it instead. */
     muscle?: boolean;
+    /** Wider second pass: any physical activity, described movements, rehab, sport drills. */
+    wide?: boolean;
   },
 ): Promise<ExerciseSuggestionAI[]> {
   if (!env.COHERE_API_KEY) return [];
@@ -305,16 +310,30 @@ export async function suggestExercises(
   const system = [
     opts.muscle
       ? `Suggest up to ${limit} effective, widely used gym exercises whose primary muscle is the given muscle group, mixing equipment (barbell, dumbbell, cable, machine, bodyweight), best first.`
-      : "You normalise a partial or misspelled strength-training exercise name to real, canonical exercise names.",
+      : opts.wide
+        ? [
+            "The user is logging a workout and typed something a gym-exercise lookup could not match.",
+            "Work out what physical exercise or activity they most likely mean. The query may be a",
+            "nickname, brand or machine name, a misspelling, another language, a described movement",
+            "('machine where you push your legs out'), a physio/rehab or mobility exercise, a yoga pose,",
+            "a sport drill, a class (e.g. 'body pump') or a CrossFit/Hyrox movement.",
+            `Return up to ${limit} plausible interpretations, most likely first. Always return at least one`,
+            "unless the query is clearly not an exercise at all.",
+          ].join(" ")
+        : "You normalise a partial or misspelled exercise name (strength, cardio, mobility or sport) to real, canonical exercise names.",
     opts.muscle ? "" : `Return up to ${limit} exercises that best match the query, most likely first.`,
-    "Use standard gym naming: 'Barbell Bench Press' not 'bench'; 'Romanian Deadlift' not 'rdl'.",
-    "primary_muscle: one of chest, back, quads, hamstrings, glutes, shoulders, biceps, triceps, core, calves, cardio.",
-    "equipment: one of barbell, dumbbell, machine, cable, bodyweight, kettlebell, smith.",
+    opts.muscle
+      ? ""
+      : "Keep the specifics the user typed: equipment, attachment, grip, stance, angle, single/dual arm, machine type. The first result must be the specific variant they described (e.g. 'dual cable lat pull' → 'Dual Cable Lat Pulldown', not 'Lat Pulldown'); broader or related exercises may follow it.",
+    "Use standard naming: 'Barbell Bench Press' not 'bench'; 'Romanian Deadlift' not 'rdl'.",
+    "primary_muscle: one of chest, back, quads, hamstrings, glutes, shoulders, biceps, triceps, forearms, core, calves, cardio.",
+    "equipment: one of barbell, dumbbell, kettlebell, cable, machine, smith, bodyweight, band, other.",
     "category: one of compound, isolation, cardio.",
     "alternatives: same-muscle substitute exercises with different equipment, as canonical names.",
+    "description: one short sentence on how it's done and what it works.",
     "Only return exercises that genuinely exist. Never invent a URL.",
     known.length
-      ? `Prefer these existing names verbatim when they match:\n${known.map((k) => `- ${k}`).join("\n")}`
+      ? `Existing names in the user's list — reuse one verbatim only when it is the same exercise, not merely similar:\n${known.map((k) => `- ${k}`).join("\n")}`
       : "",
   ]
     .filter(Boolean)
@@ -347,6 +366,7 @@ export async function suggestExercises(
           alternatives: Array.isArray(r.alternatives)
             ? r.alternatives.map(String).slice(0, 6)
             : [],
+          description: r.description ? String(r.description).trim().slice(0, 300) || null : null,
         };
       })
       .filter((s) => s.canonical_name.length > 1);

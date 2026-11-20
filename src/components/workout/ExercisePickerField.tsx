@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-import { Spinner } from "../ui";
-import { useDebouncedValue } from "../../lib/useDebouncedValue";
-import { useExerciseSuggest } from "../../lib/queries";
+import { useEffect, useMemo, useState } from "react";
+import { useExerciseCatalog } from "../../lib/queries";
+import { searchExerciseCatalog } from "../../lib/workout";
 
-/** Slim inline exercise input with a debounced catalog dropdown. Free text is
- *  allowed (catalog_id stays null until a suggestion is picked). */
+/** Slim inline exercise input with an instant catalog dropdown (searched in the
+ *  browser). Free text is allowed (catalog_id stays null until a suggestion is picked). */
 export function ExercisePickerField({
   value,
   onChange,
@@ -16,12 +15,22 @@ export function ExercisePickerField({
 }) {
   const [text, setText] = useState(value.name);
   const [open, setOpen] = useState(false);
-  const debounced = useDebouncedValue(text.trim(), 250);
-  const suggest = useExerciseSuggest(open ? debounced : "");
+  const catalog = useExerciseCatalog();
 
   useEffect(() => setText(value.name), [value.name]);
 
-  const results = suggest.data?.suggestions ?? [];
+  const results = useMemo(
+    () =>
+      open && text.trim().length >= 2
+        ? searchExerciseCatalog(catalog.data?.exercises ?? [], text, { limit: 12 }).map((e) => ({
+            catalog_id: e.id,
+            canonical_name: e.name,
+            primary_muscle: e.muscle,
+            equipment: e.equipment,
+          }))
+        : [],
+    [open, text, catalog.data],
+  );
 
   return (
     <div className="relative">
@@ -37,11 +46,6 @@ export function ExercisePickerField({
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-2 pr-7 text-sm outline-none focus:border-[var(--pro)]"
       />
-      {open && suggest.isFetching && (
-        <span className="pointer-events-none absolute right-2 top-2.5 text-[var(--text-dim)]">
-          <Spinner className="h-3.5 w-3.5" />
-        </span>
-      )}
       {open && results.length > 0 && (
         <div className="absolute z-30 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 text-sm shadow-lg">
           {results.map((s, i) => (
