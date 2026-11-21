@@ -236,6 +236,33 @@ workouts.get("/strength", async (c) => {
   });
 });
 
+// GET/PUT /api/workouts/key-lifts — the lifts the strength index uses.
+// { lifts: string[] | null } (normalized names); null = every lift.
+workouts.get("/key-lifts", async (c) => {
+  const r = await c.env.DB.prepare("SELECT key_lifts FROM settings WHERE id = 1").first<{
+    key_lifts: string | null;
+  }>();
+  let lifts: string[] | null = null;
+  try {
+    const v = r?.key_lifts ? JSON.parse(r.key_lifts) : null;
+    if (Array.isArray(v)) lifts = v.map(String);
+  } catch {
+    /* bad JSON = every lift */
+  }
+  return c.json({ lifts });
+});
+
+workouts.put("/key-lifts", async (c) => {
+  const b = await c.req.json<{ lifts?: unknown }>().catch(() => ({}) as { lifts?: unknown });
+  const lifts = Array.isArray(b.lifts)
+    ? [...new Set(b.lifts.map((x) => normalizeExerciseName(String(x))).filter(Boolean))].slice(0, 50)
+    : null;
+  await c.env.DB.prepare("UPDATE settings SET key_lifts = ? WHERE id = 1")
+    .bind(lifts ? JSON.stringify(lifts) : null)
+    .run();
+  return c.json({ lifts });
+});
+
 // GET /api/workouts/muscle-balance?days=30 — exercises + working sets per
 // primary muscle across finished sessions, so neglected groups stand out.
 workouts.get("/muscle-balance", async (c) => {

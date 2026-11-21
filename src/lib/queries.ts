@@ -667,3 +667,19 @@ export function useStrengthPoints(range: InsightRange) {
     queryFn: () => api.get<{ points: StrengthPoint[] }>(`/api/workouts/strength?range=${range}`),
   });
 }
+
+export function useKeyLifts() {
+  return useQuery({
+    queryKey: ["key-lifts"],
+    queryFn: () => api.get<{ lifts: string[] | null }>("/api/workouts/key-lifts"),
+  });
+}
+
+export function useSetKeyLifts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (lifts: string[] | null) =>
+      api.put<{ lifts: string[] | null }>("/api/workouts/key-lifts", { lifts }),
+    onSuccess: (data) => qc.setQueryData(["key-lifts"], data),
+  });
+}

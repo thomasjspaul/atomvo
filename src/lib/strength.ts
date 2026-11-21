@@ -119,3 +119,36 @@ export function liftChanges(points: StrengthPoint[]): LiftChange[] {
   }
   return out.sort((a, b) => b.sessions - a.sessions);
 }
+
+export type LiftConsistency = {
+  name: string;
+  sessions: number;
+  /** Weeks this lift was done, out of the weeks you trained at all in the range. */
+  weeks: number;
+  ofWeeks: number;
+  share: number;
+};
+
+/** How consistently each lift is done: weeks trained with it / weeks with any lifting. */
+export function liftConsistency(points: StrengthPoint[]): LiftConsistency[] {
+  const allWeeks = new Set(points.map((p) => weekStart(p.date)));
+  const by = new Map<string, { sessions: number; weeks: Set<string> }>();
+  for (const p of points) {
+    const e = by.get(p.norm_name) ?? { sessions: 0, weeks: new Set<string>() };
+    e.sessions++;
+    e.weeks.add(weekStart(p.date));
+    by.set(p.norm_name, e);
+  }
+  return [...by]
+    .map(([name, e]) => ({
+      name,
+      sessions: e.sessions,
+      weeks: e.weeks.size,
+      ofWeeks: allWeeks.size,
+      share: allWeeks.size ? e.weeks.size / allWeeks.size : 0,
+    }))
+    .sort((a, b) => b.share - a.share || b.sessions - a.sessions);
+}
+
+/** Lifts done in at least this share of training weeks are highlighted as consistent. */
+export const CONSISTENT_SHARE = 0.5;
