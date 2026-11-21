@@ -68,13 +68,7 @@ exerciseNames.get("/", async (c) => {
 // POST /api/exercise-names/suggest — AI merge/rename suggestions (nothing is changed).
 exerciseNames.post("/suggest", async (c) => {
   if (!c.env.COHERE_API_KEY) return c.json({ error: "AI isn't configured" }, 400);
-  const [logged, s, cat] = await Promise.all([
-    loggedExercises(c.env),
-    getSettings(c.env),
-    c.env.DB.prepare("SELECT canonical_name FROM exercise_catalog ORDER BY canonical_name").all<{
-      canonical_name: string;
-    }>(),
-  ]);
+  const [logged, s] = await Promise.all([loggedExercises(c.env), getSettings(c.env)]);
   if (!logged.length) return c.json({ suggestions: [] });
 
   // The AI sees display names; map its answers back to norm_names.
@@ -88,11 +82,19 @@ exerciseNames.post("/suggest", async (c) => {
   try {
     groups = await suggestExerciseCleanup(c.env, {
       logged: logged.map((l) => ({ name: l.name, sessions: l.sessions })),
-      catalog: cat.results.map((r) => r.canonical_name),
       model: s.cohere_model,
     });
   } catch (e) {
-    return c.json({ error: `AI request failed: ${(e as Error).message.slice(0, 200)}` }, 502);
+    const err = e as Error;
+    const slow = err.name === "TimeoutError" || /\b52[24]\b/.test(err.message);
+    return c.json(
+      {
+        error: slow
+          ? "The AI took too long to answer. Try again in a minute."
+          : `AI request failed: ${err.message.slice(0, 200)}`,
+      },
+      slow ? 504 : 502,
+    );
   }
 
   const used = new Set<string>();

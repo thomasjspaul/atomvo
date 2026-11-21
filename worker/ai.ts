@@ -32,9 +32,11 @@ async function callCohere(
   model: string,
   messages: unknown[],
   schema: { name: string; schema: Record<string, unknown> },
+  opts: { timeoutMs?: number } = {},
 ): Promise<Record<string, unknown>> {
   const res = await fetch(COHERE_URL, {
     method: "POST",
+    signal: opts.timeoutMs ? AbortSignal.timeout(opts.timeoutMs) : undefined,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${env.COHERE_API_KEY}`,
@@ -645,7 +647,7 @@ export type ExerciseCleanupGroupAI = { name: string; members: string[]; reason: 
  */
 export async function suggestExerciseCleanup(
   env: Env,
-  opts: { logged: Array<{ name: string; sessions: number }>; catalog: string[]; model?: string },
+  opts: { logged: Array<{ name: string; sessions: number }>; model?: string },
 ): Promise<ExerciseCleanupGroupAI[]> {
   if (!env.COHERE_API_KEY) return [];
   const model = opts.model || env.COHERE_MODEL || "command-a-plus-05-2026";
@@ -661,17 +663,15 @@ export async function suggestExerciseCleanup(
     "  When unsure, leave them separate.",
     "- A single name may form its own group if it is badly written (typo, broken apostrophe like \"captain s\", odd case);",
     "  then `name` is the corrected spelling. Skip names that are already fine.",
-    "- For `name`, prefer the matching name from the reference catalog when one is the same exercise; otherwise a",
-    "  clear, conventional name in Title Case.",
+    "- For `name`, use a clear, conventional gym name in Title Case (e.g. \"Romanian Deadlift\", \"Lat Pulldown\").",
+    "- Keep `reason` to a few words. Leave out names that need no change; an empty list is fine.",
     "- Each logged name may appear in at most one group.",
   ].join("\n");
-  const user = [
-    "Logged names (sessions):",
-    ...opts.logged.map((l) => `- ${l.name} (${l.sessions})`),
-    "",
-    "Reference catalog names:",
-    opts.catalog.join("; "),
-  ].join("\n");
+  // The catalog isn't sent (366 names made the request time out); the caller maps the
+  // chosen name onto a catalog entry when one matches.
+  const user = ["Logged names (sessions):", ...opts.logged.map((l) => `- ${l.name} (${l.sessions})`)].join(
+    "\n",
+  );
   const raw = await callCohere(
     env,
     model,
@@ -680,6 +680,7 @@ export async function suggestExerciseCleanup(
       { role: "user", content: user },
     ],
     EXERCISE_CLEANUP_SCHEMA,
+    { timeoutMs: 75_000 },
   );
   const groups = Array.isArray(raw.groups) ? raw.groups : [];
   return groups
