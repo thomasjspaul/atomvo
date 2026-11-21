@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import type {
   BodyMeasurement,
+  ExerciseCleanupSuggestion,
+  ExerciseRename,
+  LoggedExercise,
   StrengthPoint,
   ActiveWorkoutResponse,
   DayResponse,
@@ -681,5 +684,56 @@ export function useSetKeyLifts() {
     mutationFn: (lifts: string[] | null) =>
       api.put<{ lifts: string[] | null }>("/api/workouts/key-lifts", { lifts }),
     onSuccess: (data) => qc.setQueryData(["key-lifts"], data),
+  });
+}
+
+export function useExerciseNames() {
+  return useQuery({
+    queryKey: ["exercise-names"],
+    queryFn: () =>
+      api.get<{ logged: LoggedExercise[]; renames: ExerciseRename[] }>("/api/exercise-names"),
+  });
+}
+
+export function useSuggestExerciseNames() {
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ suggestions: ExerciseCleanupSuggestion[] }>("/api/exercise-names/suggest"),
+  });
+}
+
+// Everything that shows exercise names or history needs a refresh after a rename/undo.
+function invalidateExerciseData(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({
+    predicate: (q) => {
+      const k = String(q.queryKey[0] ?? "");
+      return (
+        k.startsWith("exercise") ||
+        k.startsWith("workout") ||
+        k === "strength" ||
+        k === "key-lifts" ||
+        k === "insights"
+      );
+    },
+  });
+}
+
+export function useApplyExerciseRename() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { from: string[]; to_name: string; catalog_id?: string | null }) =>
+      api.post<{ id: string; to_name: string; exercises: number; sets: number }>(
+        "/api/exercise-names/apply",
+        body,
+      ),
+    onSuccess: () => invalidateExerciseData(qc),
+  });
+}
+
+export function useUndoExerciseRename() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<{ ok: true }>(`/api/exercise-names/${id}/undo`),
+    onSuccess: () => invalidateExerciseData(qc),
   });
 }

@@ -206,7 +206,8 @@ workouts.get("/progress", async (c) => {
 
 // GET /api/workouts/strength?range=30|90|180|365|all — best estimated 1RM (Epley) per
 // exercise per day, for the strength-vs-body-weight index. Sets over 12 reps are left out
-// (the estimate gets unreliable), as are warm-ups and bodyweight sets.
+// (the estimate gets unreliable), as are warm-ups and bodyweight sets. e1rm_rpe_kg adds
+// reps in reserve from RPE; the client fills sessions without it from the lift's usual effort.
 const STRENGTH_RANGE_DAYS: Record<string, number> = { "30": 30, "90": 90, "180": 180, "365": 365, all: 3650 };
 workouts.get("/strength", async (c) => {
   const days = STRENGTH_RANGE_DAYS[String(c.req.query("range") || "180")] ?? 180;
@@ -217,7 +218,11 @@ workouts.get("/strength", async (c) => {
   );
   const rows = await c.env.DB.prepare(
     `SELECT st.norm_name AS norm_name, s.tracking_date AS date,
-            MAX(st.weight_kg * (1 + st.reps / 30.0)) AS e1rm
+            MAX(st.weight_kg * (1 + st.reps / 30.0)) AS e1rm,
+            -- RPE-adjusted: reps left in the tank (10 - RPE) count as extra reps.
+            -- RPE under 6 is too rough to use.
+            MAX(CASE WHEN st.rpe BETWEEN 6 AND 10
+                     THEN st.weight_kg * (1 + (st.reps + 10 - st.rpe) / 30.0) END) AS e1rm_rpe
        FROM workout_sets st
        JOIN workout_sessions s ON s.id = st.session_id AND s.status = 'finished'
       WHERE s.tracking_date >= ? AND st.is_warmup = 0
@@ -226,12 +231,16 @@ workouts.get("/strength", async (c) => {
       ORDER BY s.tracking_date`,
   )
     .bind(start)
-    .all<{ norm_name: string; date: string; e1rm: number }>();
+    .all<{ norm_name: string; date: string; e1rm: number; e1rm_rpe: number | null }>();
   return c.json({
     points: rows.results.map((r) => ({
       norm_name: r.norm_name,
       date: r.date,
       e1rm_kg: round1(Number(r.e1rm)),
+      // Only when the RPE-rated sets cover the session's heaviest effort; a rated
+      // back-off set alone doesn't speak for an unrated top set.
+      e1rm_rpe_kg:
+        r.e1rm_rpe != null && Number(r.e1rm_rpe) >= Number(r.e1rm) ? round1(Number(r.e1rm_rpe)) : null,
     })),
   });
 });

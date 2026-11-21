@@ -21,6 +21,7 @@ import {
   CONSISTENT_SHARE,
   liftChanges,
   liftConsistency,
+  rpeCoverage,
   trendChange,
   weeklyRows,
   type LiftConsistency,
@@ -73,6 +74,7 @@ export function StrengthVsWeightCard() {
   const body = insights.data?.body;
   const rows = useMemo(() => (points && body ? weeklyRows(points, body) : []), [points, body]);
   const lifts = useMemo(() => (points ? liftChanges(points) : []), [points]);
+  const rpe = useMemo(() => (points ? rpeCoverage(points) : { rated: 0, total: 0 }), [points]);
 
   const s = trendChange(rows, "strength");
   const w = trendChange(rows, "weight");
@@ -189,10 +191,15 @@ export function StrengthVsWeightCard() {
           )}
 
           <p className="text-[11px] text-[var(--text-dim)]">
-            Only the lifts above count. Strength = estimated 1-rep max of your best set (up to 12 reps), each lift compared with
-            its own previous session and averaged across lifts, so new or dropped exercises don’t
-            skew it. All lines are % change from the same starting week; headline numbers come
-            from the trend, not the last week.
+            Only the lifts above count. Strength = estimated 1-rep max of your best set (up to 12
+            reps), each lift compared with its own previous session and averaged across lifts, so
+            new or dropped exercises don’t skew it. When a session has an RPE (6–10) on the top
+            set, reps left in the tank count too
+            {rpe.total > 0 && ` (${Math.round((rpe.rated / rpe.total) * 100)}% of sessions here)`};
+            when it’s missing, that lift’s usual effort is assumed, so a forgotten RPE doesn’t
+            create a fake jump. All lines
+            are % change from the same starting week; headline numbers come from the trend, not the
+            last week.
           </p>
         </>
       )}

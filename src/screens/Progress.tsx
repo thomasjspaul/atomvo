@@ -19,6 +19,7 @@ import { CarbsVsStrain } from "../components/insights/CarbsVsStrain";
 import { GymProgressCard } from "../components/workout/GymProgressCard";
 import { MuscleBalanceCard } from "../components/workout/MuscleBalanceCard";
 import { StrengthVsWeightCard } from "../components/workout/StrengthVsWeightCard";
+import { ExerciseNamesCard } from "../components/workout/ExerciseNamesCard";
 import { WaistCard } from "../components/insights/WaistCard";
 import { BodyComposition } from "../components/insights/BodyComposition";
 import { BodyFatMuscle } from "../components/insights/BodyFatMuscle";
@@ -115,6 +116,7 @@ export function Progress() {
           <StrengthVsWeightCard />
           <MuscleBalanceCard />
           <GymProgressCard imperial={imperial} />
+          <ExerciseNamesCard />
         </div>
       )}
 

@@ -19,25 +19,43 @@ export type WeekRow = {
 };
 
 /**
- * Chain-linked strength index. Every time a lift is repeated, its best estimated 1RM is
- * compared with that lift's previous session (log ratio). Each lift's change within a week
- * is added up, those are averaged across the lifts done that week, and the weeks chained. New lifts don't count until their second session, so adding or dropping
- * exercises doesn't move the index, and one lift's changes telescope (last vs first).
+ * One comparable estimate per session. Sessions with RPE use the RPE-adjusted 1RM.
+ * Sessions without it use the plain 1RM scaled by that lift's average RPE adjustment (from
+ * its rated sessions; 1 if none), so every session is on the same footing — a forgotten
+ * RPE gets "typical effort" instead of creating a fake jump next to rated sessions.
+ */
+export function effectiveE1rm(points: StrengthPoint[]): number[] {
+  const ratios = new Map<string, number[]>();
+  for (const p of points) {
+    if (p.e1rm_rpe_kg != null && p.e1rm_kg > 0) {
+      ratios.set(p.norm_name, [...(ratios.get(p.norm_name) ?? []), p.e1rm_rpe_kg / p.e1rm_kg]);
+    }
+  }
+  const avg = new Map([...ratios].map(([k, v]) => [k, v.reduce((a, b) => a + b, 0) / v.length]));
+  return points.map((p) => p.e1rm_rpe_kg ?? p.e1rm_kg * (avg.get(p.norm_name) ?? 1));
+}
+
+/**
+ * Chain-linked strength index. Every time a lift is repeated, its best estimated 1RM
+ * (effectiveE1rm) is compared with that lift's previous session. Each lift's change within a
+ * week is added up, those are averaged across the lifts done that week, and the weeks
+ * chained. New lifts don't count until their second session, so adding or dropping
+ * exercises doesn't move the index.
  */
 export function strengthIndex(points: StrengthPoint[]): Map<string, number> {
+  const eff = effectiveE1rm(points);
   const last = new Map<string, number>();
-  // week -> lift -> summed log change that week (a lift done twice in a week counts once,
-  // with both sessions' change added up)
+  // week -> lift -> summed log change that week
   const byWeek = new Map<string, Map<string, number>>();
-  for (const p of points) {
+  points.forEach((p, i) => {
     const prev = last.get(p.norm_name);
-    last.set(p.norm_name, p.e1rm_kg);
-    if (prev == null || prev <= 0) continue;
+    last.set(p.norm_name, eff[i]);
+    if (prev == null || prev <= 0) return;
     const w = weekStart(p.date);
     const lifts = byWeek.get(w) ?? new Map<string, number>();
-    lifts.set(p.norm_name, (lifts.get(p.norm_name) ?? 0) + Math.log(p.e1rm_kg / prev));
+    lifts.set(p.norm_name, (lifts.get(p.norm_name) ?? 0) + Math.log(eff[i] / prev));
     byWeek.set(w, lifts);
-  }
+  });
   const out = new Map<string, number>();
   let cum = 0;
   if (points.length) out.set(weekStart(points[0].date), 0);
@@ -47,6 +65,11 @@ export function strengthIndex(points: StrengthPoint[]): Map<string, number> {
     out.set(w, (Math.exp(cum) - 1) * 100);
   }
   return out;
+}
+
+/** Sessions with an RPE-rated top set, out of all sessions. */
+export function rpeCoverage(points: StrengthPoint[]): { rated: number; total: number } {
+  return { rated: points.filter((p) => p.e1rm_rpe_kg != null).length, total: points.length };
 }
 
 /** Weekly % change in strength, body weight and lean mass, all from their first week. */
@@ -102,20 +125,22 @@ export function trendChange(rows: WeekRow[], key: "strength" | "weight" | "lean"
 
 export type LiftChange = { name: string; sessions: number; pct: number };
 
-/** Per-lift % change from its trend line, for lifts with 3+ sessions over 14+ days. */
+/** Per-lift % change from a trend line through its effectiveE1rm, for lifts with 3+ sessions over 14+ days. */
 export function liftChanges(points: StrengthPoint[]): LiftChange[] {
-  const by = new Map<string, StrengthPoint[]>();
-  for (const p of points) by.set(p.norm_name, [...(by.get(p.norm_name) ?? []), p]);
+  const eff = effectiveE1rm(points);
+  const by = new Map<string, Array<{ x: number; y: number }>>();
+  points.forEach((p, i) =>
+    by.set(p.norm_name, [...(by.get(p.norm_name) ?? []), { x: dayNum(p.date), y: eff[i] }]),
+  );
   const out: LiftChange[] = [];
-  for (const [name, ps] of by) {
-    if (ps.length < 3) continue;
-    const xy = ps.map((p) => ({ x: dayNum(p.date), y: p.e1rm_kg }));
+  for (const [name, xy] of by) {
+    if (xy.length < 3) continue;
     const span = xy[xy.length - 1].x - xy[0].x;
     const f = linfit(xy);
     if (!f || span < 14) continue;
     const startY = f.intercept + f.slope * xy[0].x;
     if (startY <= 0) continue;
-    out.push({ name, sessions: ps.length, pct: ((f.slope * span) / startY) * 100 });
+    out.push({ name, sessions: xy.length, pct: ((f.slope * span) / startY) * 100 });
   }
   return out.sort((a, b) => b.sessions - a.sessions);
 }

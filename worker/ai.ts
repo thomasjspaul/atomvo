@@ -609,3 +609,87 @@ export async function coachFeedback(
     return null; // coaching is best-effort; never block a log on it
   }
 }
+
+// ---- exercise-name cleanup ------------------------------------------------
+
+const EXERCISE_CLEANUP_SCHEMA = {
+  name: "exercise_cleanup",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      groups: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            name: { type: "string" },
+            members: { type: "array", items: { type: "string" } },
+            reason: { type: "string" },
+          },
+          required: ["name", "members", "reason"],
+        },
+      },
+    },
+    required: ["groups"],
+  },
+};
+
+export type ExerciseCleanupGroupAI = { name: string; members: string[]; reason: string };
+
+/**
+ * Suggest merges/renames for inconsistently logged exercise names. Conservative: only
+ * spelling/wording variants of the SAME movement on the SAME equipment are merged.
+ * Throws on API failure (the caller reports it); [] with no API key.
+ */
+export async function suggestExerciseCleanup(
+  env: Env,
+  opts: { logged: Array<{ name: string; sessions: number }>; catalog: string[]; model?: string },
+): Promise<ExerciseCleanupGroupAI[]> {
+  if (!env.COHERE_API_KEY) return [];
+  const model = opts.model || env.COHERE_MODEL || "command-a-plus-05-2026";
+  const system = [
+    "You tidy exercise names in a personal workout log so the same exercise is always logged under one name.",
+    "Return groups. Each group: `members` = logged names (copied EXACTLY from the list) that are the same exercise,",
+    "`name` = the clean name to use for all of them, `reason` = a few words on why.",
+    "Rules:",
+    "- Only merge names that are the SAME movement with the SAME equipment and variation: typos, plurals, word order,",
+    "  abbreviations (DB = dumbbell, BB = barbell, OHP = overhead press), missing punctuation.",
+    "- NEVER merge different equipment (dumbbell vs barbell vs machine vs cable vs smith) or different variations",
+    "  (incline vs flat, seated vs standing, Romanian vs conventional deadlift, chest-supported vs bent-over).",
+    "  When unsure, leave them separate.",
+    "- A single name may form its own group if it is badly written (typo, broken apostrophe like \"captain s\", odd case);",
+    "  then `name` is the corrected spelling. Skip names that are already fine.",
+    "- For `name`, prefer the matching name from the reference catalog when one is the same exercise; otherwise a",
+    "  clear, conventional name in Title Case.",
+    "- Each logged name may appear in at most one group.",
+  ].join("\n");
+  const user = [
+    "Logged names (sessions):",
+    ...opts.logged.map((l) => `- ${l.name} (${l.sessions})`),
+    "",
+    "Reference catalog names:",
+    opts.catalog.join("; "),
+  ].join("\n");
+  const raw = await callCohere(
+    env,
+    model,
+    [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    EXERCISE_CLEANUP_SCHEMA,
+  );
+  const groups = Array.isArray(raw.groups) ? raw.groups : [];
+  return groups
+    .map((g) => {
+      const o = (g ?? {}) as Record<string, unknown>;
+      return {
+        name: String(o.name ?? "").trim(),
+        members: Array.isArray(o.members) ? o.members.map(String) : [],
+        reason: String(o.reason ?? "").trim(),
+      };
+    })
+    .filter((g) => g.name && g.members.length);
+}

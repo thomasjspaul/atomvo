@@ -251,11 +251,40 @@ export interface BodyMeasurement {
   waist_cm: number | null;
 }
 
+/** An exercise name as logged, for the name clean-up tool. */
+export interface LoggedExercise {
+  norm_name: string;
+  name: string;
+  catalog_id: string | null;
+  sessions: number;
+  sets: number;
+  first_done: string;
+  last_done: string;
+}
+
+/** AI-proposed merge/rename: every `members` norm_name becomes `to_name`. */
+export interface ExerciseCleanupSuggestion {
+  members: string[];
+  to_name: string;
+  catalog_id: string | null;
+  reason: string;
+}
+
+export interface ExerciseRename {
+  id: string;
+  created_at: string;
+  from: string[];
+  to_name: string;
+  undone_at: string | null;
+}
+
 /** Strongest set (estimated 1RM, kg) of one exercise on one day. */
 export interface StrengthPoint {
   norm_name: string;
   date: string;
   e1rm_kg: number;
+  /** Same, counting reps in reserve from RPE (6–10); null when the top set has no RPE. */
+  e1rm_rpe_kg: number | null;
 }
 
 export interface InsightsBodyDay {
