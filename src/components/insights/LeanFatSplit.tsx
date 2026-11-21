@@ -1,51 +1,58 @@
 import { Card } from "../ui";
 import { kgToLb } from "../../lib/format";
-import { linfit } from "../../lib/insights";
+import { MIN_READINGS, MIN_SPAN_DAYS, STEADY_KG, compChange, compPoints } from "../../lib/bodycomp";
 import type { InsightsBodyDay } from "../../types";
 
-const MIN_READINGS = 4;
-const MIN_SPAN_DAYS = 14;
-/** Below this total change (kg) the split is noise, not signal. */
-const STEADY_KG = 0.5;
-
 type Verdict = { tone: "good" | "bad" | "neutral"; headline: string; detail: string };
+
+const fmtDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
 
 /**
  * Where the weight change is going: lean vs fat, from the trend line across every
  * reading in the range (least-squares fit), so single-day scale swings don't count.
+ * `period` narrows it to a span picked on the Body composition chart.
  */
-export function LeanFatSplit({ body, imperial }: { body: InsightsBodyDay[]; imperial: boolean }) {
+export function LeanFatSplit({
+  body,
+  imperial,
+  period,
+}: {
+  body: InsightsBodyDay[];
+  imperial: boolean;
+  period: { from: string; to: string } | null;
+}) {
   const u = imperial ? "lb" : "kg";
   const conv = (kg: number) => (imperial ? kgToLb(kg) : kg);
 
-  const pts = body
-    .map((b) => {
-      const fat =
-        b.fat_mass_kg ??
-        (b.weight_kg != null && b.body_fat_pct != null ? (b.weight_kg * b.body_fat_pct) / 100 : null);
-      const lean = b.lean_mass_kg ?? (b.weight_kg != null && fat != null ? b.weight_kg - fat : null);
-      const day = Date.parse(`${b.date}T00:00:00Z`) / 86_400_000;
-      return lean == null || fat == null ? null : { day, lean, fat };
-    })
-    .filter((p): p is { day: number; lean: number; fat: number } => p != null);
+  const pts = compPoints(body).filter(
+    (p) => !period || (p.iso >= period.from && p.iso <= period.to),
+  );
+  const change = compChange(pts);
+  const when =
+    pts.length === 0
+      ? ""
+      : period
+        ? `${fmtDate(pts[0].iso)} – ${fmtDate(pts[pts.length - 1].iso)}`
+        : `last ${Math.round(pts[pts.length - 1].day - pts[0].day)} days`;
 
-  const span = pts.length ? pts[pts.length - 1].day - pts[0].day : 0;
-  const leanFit = linfit(pts.map((p) => ({ x: p.day, y: p.lean })));
-  const fatFit = linfit(pts.map((p) => ({ x: p.day, y: p.fat })));
-
-  if (pts.length < MIN_READINGS || span < MIN_SPAN_DAYS || !leanFit || !fatFit) {
+  if (!change) {
     return (
       <Card>
         <h2 className="mb-1 text-sm font-medium">Lean vs fat change</h2>
         <p className="py-3 text-center text-xs text-[var(--text-dim)]">
-          Needs at least {MIN_READINGS} scale readings over {MIN_SPAN_DAYS}+ days in this range.
+          Needs at least {MIN_READINGS} scale readings over {MIN_SPAN_DAYS}+ days
+          {period ? " in the selected period" : " in this range"}.
         </p>
       </Card>
     );
   }
 
-  const dLean = leanFit.slope * span;
-  const dFat = fatFit.slope * span;
+  const { dLean, dFat, span } = change;
   const v = verdict(dLean, dFat);
   const weeks = span / 7;
   const fmt = (kg: number, dp = 1) => `${kg >= 0 ? "+" : "−"}${Math.abs(conv(kg)).toFixed(dp)}`;
@@ -60,7 +67,7 @@ export function LeanFatSplit({ body, imperial }: { body: InsightsBodyDay[]; impe
     <Card>
       <div className="mb-2 flex items-baseline justify-between">
         <h2 className="text-sm font-medium">Lean vs fat change</h2>
-        <span className="text-[11px] text-[var(--text-dim)]">last {Math.round(span)} days</span>
+        <span className="text-[11px] text-[var(--text-dim)]">{when}</span>
       </div>
 
       <div className="text-lg font-semibold" style={{ color: toneColor }}>

@@ -21,6 +21,7 @@ import { MuscleBalanceCard } from "../components/workout/MuscleBalanceCard";
 import { BodyComposition } from "../components/insights/BodyComposition";
 import { BodyFatMuscle } from "../components/insights/BodyFatMuscle";
 import { LeanFatSplit } from "../components/insights/LeanFatSplit";
+import { LeanBalanceRolling } from "../components/insights/LeanBalanceRolling";
 import { ScaleReadings } from "../components/insights/ScaleReadings";
 import { WHOOP_METRICS, hydrationRecoveryInsight, pairDays } from "../lib/insights";
 
@@ -39,6 +40,7 @@ export function Progress() {
   const [range, setRange] = useState<Range>(30);
   const [wRange, setWRange] = useState<InsightRange>("90");
   const [bRange, setBRange] = useState<InsightRange>("180");
+  const [bPeriod, setBPeriod] = useState<{ from: string; to: string } | null>(null);
   const stats = useStats(range);
   const insights = useInsights(wRange);
   const bodyInsights = useInsights(bRange);
@@ -287,7 +289,10 @@ export function Progress() {
                   {INSIGHT_RANGES.map((r) => (
                     <button
                       key={r.key}
-                      onClick={() => setBRange(r.key)}
+                      onClick={() => {
+                        setBRange(r.key);
+                        setBPeriod(null);
+                      }}
                       className={`rounded-md px-1.5 py-0.5 ${
                         bRange === r.key
                           ? "bg-[var(--surface)] font-medium"
@@ -300,8 +305,14 @@ export function Progress() {
                 </div>
               </div>
               <div className="space-y-4">
-                <LeanFatSplit body={bIns.body} imperial={imperial} />
-                <BodyComposition body={bIns.body} imperial={imperial} />
+                <LeanFatSplit body={bIns.body} imperial={imperial} period={bPeriod} />
+                <BodyComposition
+                  key={bRange}
+                  body={bIns.body}
+                  imperial={imperial}
+                  onSelect={setBPeriod}
+                />
+                <LeanBalanceRolling body={bIns.body} />
                 <BodyFatMuscle body={bIns.body} imperial={imperial} />
                 <ScaleReadings latest={bIns.body_latest} imperial={imperial} />
               </div>

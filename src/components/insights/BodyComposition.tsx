@@ -1,5 +1,6 @@
 import {
   Area,
+  Brush,
   CartesianGrid,
   ComposedChart,
   ResponsiveContainer,
@@ -24,21 +25,27 @@ const fmtDate = (iso: string) =>
     timeZone: "UTC",
   });
 
-type Row = { date: string; lean: number | null; fat: number | null; bf: number | null; weight: number | null };
+type Row = { iso: string; date: string; lean: number | null; fat: number | null; bf: number | null; weight: number | null };
 
-/** Stacked lean vs fat mass over time — recomp view. */
+/**
+ * Stacked lean vs fat mass over time — recomp view. The handles under the chart pick a
+ * period; `onSelect` gets its first and last reading dates (null = the whole range).
+ */
 export function BodyComposition({
   body,
   imperial,
+  onSelect,
 }: {
   body: InsightsBodyDay[];
   imperial: boolean;
+  onSelect?: (period: { from: string; to: string } | null) => void;
 }) {
   const u = imperial ? "lb" : "kg";
   const conv = (v: number | null) => (v == null ? null : +(imperial ? kgToLb(v) : v).toFixed(1));
 
   const rows: Row[] = body
     .map((b) => ({
+      iso: b.date,
       date: fmtDate(b.date),
       lean: conv(b.lean_mass_kg),
       fat: conv(b.fat_mass_kg),
@@ -56,7 +63,7 @@ export function BodyComposition({
         </p>
       ) : (
         <>
-          <ResponsiveContainer width="100%" height={190}>
+          <ResponsiveContainer width="100%" height={onSelect && rows.length > 2 ? 220 : 190}>
             <ComposedChart data={rows} margin={{ top: 6, right: 6, bottom: 4, left: 0 }}>
               <CartesianGrid stroke="var(--border)" vertical={false} />
               <XAxis
@@ -86,6 +93,20 @@ export function BodyComposition({
                 fillOpacity={0.35}
                 connectNulls
               />
+              {onSelect && rows.length > 2 && (
+                <Brush
+                  dataKey="date"
+                  height={22}
+                  travellerWidth={10}
+                  stroke="var(--pro)"
+                  fill="var(--surface-2)"
+                  onChange={({ startIndex, endIndex }) => {
+                    if (startIndex == null || endIndex == null) return;
+                    const full = startIndex === 0 && endIndex === rows.length - 1;
+                    onSelect(full ? null : { from: rows[startIndex].iso, to: rows[endIndex].iso });
+                  }}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
           <div className="mt-1 flex gap-4 text-[11px] text-[var(--text-dim)]">
@@ -96,6 +117,11 @@ export function BodyComposition({
               <span style={{ color: "var(--warn)" }}>▮</span> fat mass
             </span>
           </div>
+          {onSelect && rows.length > 2 && (
+            <p className="mt-1 text-[11px] text-[var(--text-dim)]">
+              Drag the handles under the chart to pick a period for the lean vs fat card.
+            </p>
+          )}
         </>
       )}
     </Card>
