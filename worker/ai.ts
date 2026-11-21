@@ -651,13 +651,14 @@ const EXERCISE_CLEANUP_SCHEMA = {
 export type ExerciseCleanupGroupAI = { name: string; members: string[]; reason: string };
 
 /**
- * Suggest merges/renames for inconsistently logged exercise names. Conservative: only
+ * Suggest merges/renames for one batch of logged exercise names. Conservative: only
  * spelling/wording variants of the SAME movement on the SAME equipment are merged.
- * Throws on API failure (the caller reports it); [] with no API key.
+ * Retries 5xx/timeouts until `deadline` (ms epoch), the last try in plain JSON mode.
+ * Throws when every attempt fails; [] with no API key.
  */
 export async function suggestExerciseCleanup(
   env: Env,
-  opts: { logged: Array<{ name: string; sessions: number }>; model?: string },
+  opts: { logged: Array<{ name: string; sessions: number }>; model?: string; deadline: number },
 ): Promise<ExerciseCleanupGroupAI[]> {
   if (!env.COHERE_API_KEY) return [];
   const model = opts.model || env.COHERE_MODEL || "command-a-plus-05-2026";
@@ -677,8 +678,6 @@ export async function suggestExerciseCleanup(
     "- Keep `reason` to a few words. Leave out names that need no change; an empty list is fine.",
     "- Each logged name may appear in at most one group.",
   ].join("\n");
-  // The catalog isn't sent (366 names made the request time out); the caller maps the
-  // chosen name onto a catalog entry when one matches.
   const user = ["Logged names (sessions):", ...opts.logged.map((l) => `- ${l.name} (${l.sessions})`)].join(
     "\n",
   );
@@ -689,22 +688,24 @@ export async function suggestExerciseCleanup(
       content: `${user}\n\nAnswer with JSON only: {"groups":[{"name":"...","members":["..."],"reason":"..."}]}`,
     },
   ];
-  // Cohere sometimes 500s/times out on this longer structured answer: retry once, then
-  // once more in plain JSON mode (no schema-constrained decoding). 4xx errors aren't retried.
-  const attempts = [{ strict: true }, { strict: true }, { strict: false }];
+  // Cohere sometimes 500s/times out on structured answers: retry while time allows, the
+  // last try in plain JSON mode (no schema-constrained decoding). 4xx isn't retried.
   let raw: Record<string, unknown> | null = null;
-  let lastErr: unknown = null;
-  for (const a of attempts) {
+  let lastErr: unknown = new Error("AI request timed out");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const left = opts.deadline - Date.now();
+    if (left < 5_000) break;
     try {
       raw = await callCohere(env, model, messages, EXERCISE_CLEANUP_SCHEMA, {
-        timeoutMs: 45_000,
-        strict: a.strict,
+        timeoutMs: Math.min(40_000, left),
+        strict: attempt < 2 && left > 20_000,
       });
       break;
     } catch (e) {
       lastErr = e;
-      const m = (e as Error).message;
-      const retryable = (e as Error).name === "TimeoutError" || /Cohere 5\d\d/.test(m) || e instanceof SyntaxError;
+      const err = e as Error;
+      const retryable =
+        err.name === "TimeoutError" || /Cohere 5\d\d/.test(err.message) || e instanceof SyntaxError;
       if (!retryable) throw e;
     }
   }

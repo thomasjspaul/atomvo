@@ -698,7 +698,9 @@ export function useExerciseNames() {
 export function useSuggestExerciseNames() {
   return useMutation({
     mutationFn: () =>
-      api.post<{ suggestions: ExerciseCleanupSuggestion[] }>("/api/exercise-names/suggest"),
+      api.post<{ suggestions: ExerciseCleanupSuggestion[]; partial?: boolean }>(
+        "/api/exercise-names/suggest",
+      ),
   });
 }
 

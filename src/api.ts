@@ -8,7 +8,19 @@ export class ApiError extends Error {
 
 async function handle<T>(res: Response): Promise<T> {
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data: { error?: string; detail?: string } | null;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    // An HTML page instead of JSON: Cloudflare's timeout/error page, or a login redirect.
+    const why =
+      res.status === 524 || res.status === 504
+        ? "The server took too long to answer. Try again in a minute."
+        : res.ok
+          ? "Unexpected response from the server — try reloading the app."
+          : `Server error (HTTP ${res.status}).`;
+    throw new ApiError(res.status, why);
+  }
   if (!res.ok) {
     throw new ApiError(res.status, data?.error || data?.detail || `HTTP ${res.status}`);
   }

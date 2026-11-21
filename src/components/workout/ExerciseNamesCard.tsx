@@ -102,6 +102,12 @@ function CleanupSheet({ onClose }: { onClose: () => void }) {
           {suggest.isError && (
             <p className="text-xs text-[var(--warn)]">{(suggest.error as Error).message}</p>
           )}
+          {suggest.data?.partial && (
+            <p className="text-xs text-[var(--warn)]">
+              Part of the AI request failed, so some names weren’t checked — tap “Ask again” for
+              the rest.
+            </p>
+          )}
           {suggest.data && suggestions.length === 0 && (
             <p className="text-xs text-[var(--text-dim)]">No (more) suggestions — names look consistent.</p>
           )}

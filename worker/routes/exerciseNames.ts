@@ -78,14 +78,24 @@ exerciseNames.post("/suggest", async (c) => {
     byDisplay.set(l.norm_name, l);
     byDisplay.set(normalizeExerciseName(l.name), l);
   }
-  let groups;
-  try {
-    groups = await suggestExerciseCleanup(c.env, {
-      logged: logged.map((l) => ({ name: l.name, sessions: l.sessions })),
-      model: s.cohere_model,
-    });
-  } catch (e) {
-    const err = e as Error;
+  // Several small AI requests in parallel instead of one big one: a single request for
+  // all names was slow enough to hit Cloudflare's ~100 s limit. Names that could be
+  // duplicates share a movement word, so they always land in the same batch.
+  const deadline = Date.now() + 80_000;
+  const batches = batchByMovement(logged);
+  const results = await Promise.allSettled(
+    batches.map((b) =>
+      suggestExerciseCleanup(c.env, {
+        logged: b.map((l) => ({ name: l.name, sessions: l.sessions })),
+        model: s.cohere_model,
+        deadline,
+      }),
+    ),
+  );
+  const groups = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  const failed = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
+  if (failed.length === results.length) {
+    const err = failed[0].reason as Error;
     const slow = err.name === "TimeoutError" || /\b52[24]\b/.test(err.message);
     return c.json(
       {
@@ -121,7 +131,7 @@ exerciseNames.post("/suggest", async (c) => {
       reason: g.reason,
     });
   }
-  return c.json({ suggestions });
+  return c.json({ suggestions, partial: failed.length > 0 });
 });
 
 // POST /api/exercise-names/apply { from: norm_name[], to_name, catalog_id? }
@@ -261,3 +271,28 @@ exerciseNames.post("/:id/undo", async (c) => {
   for (let i = 0; i < stmts.length; i += 90) await c.env.DB.batch(stmts.slice(i, i + 90));
   return c.json({ ok: true });
 });
+
+/** Last word of the name, singular — "leg raises" → "raise", "cable curl" → "curl". */
+export function movementWord(norm: string): string {
+  let w = norm.split(" ").filter(Boolean).pop() ?? norm;
+  if (w.endsWith("ies")) w = `${w.slice(0, -3)}y`;
+  else if (/(ch|sh|x)es$/.test(w)) w = w.slice(0, -2);
+  else if (w.endsWith("s") && !w.endsWith("ss")) w = w.slice(0, -1);
+  return w === "flye" ? "fly" : w;
+}
+
+/** Group names by movement word, then pack the groups into a few batches (~20 names each). */
+export function batchByMovement(logged: LoggedExercise[], size = 20): LoggedExercise[][] {
+  const clusters = new Map<string, LoggedExercise[]>();
+  for (const l of logged) {
+    const k = movementWord(l.norm_name);
+    clusters.set(k, [...(clusters.get(k) ?? []), l]);
+  }
+  const batches: LoggedExercise[][] = [];
+  for (const cl of [...clusters.values()].sort((a, b) => b.length - a.length)) {
+    const fit = batches.find((b) => b.length + cl.length <= size);
+    if (fit) fit.push(...cl);
+    else batches.push([...cl]);
+  }
+  return batches;
+}
