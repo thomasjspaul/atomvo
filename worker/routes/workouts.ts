@@ -204,6 +204,38 @@ workouts.get("/progress", async (c) => {
   });
 });
 
+// GET /api/workouts/strength?range=30|90|180|365|all — best estimated 1RM (Epley) per
+// exercise per day, for the strength-vs-body-weight index. Sets over 12 reps are left out
+// (the estimate gets unreliable), as are warm-ups and bodyweight sets.
+const STRENGTH_RANGE_DAYS: Record<string, number> = { "30": 30, "90": 90, "180": 180, "365": 365, all: 3650 };
+workouts.get("/strength", async (c) => {
+  const days = STRENGTH_RANGE_DAYS[String(c.req.query("range") || "180")] ?? 180;
+  const s = await getSettings(c.env);
+  const start = addDays(
+    todayTrackingDate(effectiveTimezone(c.env, s), rolloverHour(c.env, s)),
+    -(days - 1),
+  );
+  const rows = await c.env.DB.prepare(
+    `SELECT st.norm_name AS norm_name, s.tracking_date AS date,
+            MAX(st.weight_kg * (1 + st.reps / 30.0)) AS e1rm
+       FROM workout_sets st
+       JOIN workout_sessions s ON s.id = st.session_id AND s.status = 'finished'
+      WHERE s.tracking_date >= ? AND st.is_warmup = 0
+        AND st.weight_kg > 0 AND st.reps BETWEEN 1 AND 12
+      GROUP BY st.norm_name, s.tracking_date
+      ORDER BY s.tracking_date`,
+  )
+    .bind(start)
+    .all<{ norm_name: string; date: string; e1rm: number }>();
+  return c.json({
+    points: rows.results.map((r) => ({
+      norm_name: r.norm_name,
+      date: r.date,
+      e1rm_kg: round1(Number(r.e1rm)),
+    })),
+  });
+});
+
 // GET /api/workouts/muscle-balance?days=30 — exercises + working sets per
 // primary muscle across finished sessions, so neglected groups stand out.
 workouts.get("/muscle-balance", async (c) => {

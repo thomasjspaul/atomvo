@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   Area,
   Brush,
@@ -43,7 +44,9 @@ export function BodyComposition({
   const u = imperial ? "lb" : "kg";
   const conv = (v: number | null) => (v == null ? null : +(imperial ? kgToLb(v) : v).toFixed(1));
 
-  const rows: Row[] = body
+  // Memoized: Recharts resets the brush whenever it gets a new data array, so a fresh
+  // array on every parent re-render (e.g. after onSelect) snapped the handles back.
+  const rows: Row[] = useMemo(() => body
     .map((b) => ({
       iso: b.date,
       date: fmtDate(b.date),
@@ -52,7 +55,8 @@ export function BodyComposition({
       bf: b.body_fat_pct,
       weight: conv(b.weight_kg),
     }))
-    .filter((r) => r.lean != null || r.fat != null);
+    .filter((r) => r.lean != null || r.fat != null), [body, imperial]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [brush, setBrush] = useState<{ start: number; end: number } | null>(null);
 
   return (
     <Card>
@@ -100,8 +104,11 @@ export function BodyComposition({
                   travellerWidth={10}
                   stroke="var(--pro)"
                   fill="var(--surface-2)"
+                  startIndex={brush?.start ?? 0}
+                  endIndex={brush?.end ?? rows.length - 1}
                   onChange={({ startIndex, endIndex }) => {
                     if (startIndex == null || endIndex == null) return;
+                    setBrush({ start: startIndex, end: endIndex });
                     const full = startIndex === 0 && endIndex === rows.length - 1;
                     onSelect(full ? null : { from: rows[startIndex].iso, to: rows[endIndex].iso });
                   }}

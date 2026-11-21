@@ -18,6 +18,8 @@ import { LaggedScatter } from "../components/insights/LaggedScatter";
 import { CarbsVsStrain } from "../components/insights/CarbsVsStrain";
 import { GymProgressCard } from "../components/workout/GymProgressCard";
 import { MuscleBalanceCard } from "../components/workout/MuscleBalanceCard";
+import { StrengthVsWeightCard } from "../components/workout/StrengthVsWeightCard";
+import { WaistCard } from "../components/insights/WaistCard";
 import { BodyComposition } from "../components/insights/BodyComposition";
 import { BodyFatMuscle } from "../components/insights/BodyFatMuscle";
 import { LeanFatSplit } from "../components/insights/LeanFatSplit";
@@ -110,6 +112,7 @@ export function Progress() {
 
       {tab === "gym" && (
         <div className="space-y-4">
+          <StrengthVsWeightCard />
           <MuscleBalanceCard />
           <GymProgressCard imperial={imperial} />
         </div>
@@ -318,6 +321,12 @@ export function Progress() {
               </div>
             </div>
           )}
+
+          <WaistCard
+            range={bRange}
+            imperial={imperial}
+            heightCm={settings.data?.settings.height_cm ?? null}
+          />
 
           <Card>
             <h2 className="mb-2 text-sm font-medium">Target &amp; BMR over time</h2>

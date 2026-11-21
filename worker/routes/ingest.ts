@@ -131,6 +131,17 @@ hcIngest.post("/:token", async (c) => {
     const atMs = Date.parse(w.time ?? "");
     if (kg == null || kg <= 0 || kg > 400) continue;
     if (!Number.isFinite(atMs) || atMs < wCutoff || atMs > Date.now() + 86_400_000) continue;
+    // Wyze (email import) is authoritative. HC re-sends the last 14 days on every sync,
+    // so skip weigh-ins a Wyze reading already covers, or they'd come back after the
+    // import deleted them.
+    const atIso = new Date(atMs).toISOString();
+    const wyze = await c.env.DB.prepare(
+      `SELECT 1 FROM weights WHERE source = 'wyze_scale'
+         AND ABS(strftime('%s', measured_at) - strftime('%s', ?)) <= 300 LIMIT 1`,
+    )
+      .bind(atIso)
+      .first();
+    if (wyze) continue;
     await insertWeight(c.env, {
       weight_kg: kg,
       measured_at: new Date(atMs).toISOString(),

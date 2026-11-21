@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import type {
+  BodyMeasurement,
+  StrengthPoint,
   ActiveWorkoutResponse,
   DayResponse,
   ExerciseCatalogEntry,
@@ -632,5 +634,36 @@ export function useAddWeight() {
       qc.invalidateQueries({ queryKey: ["day"] });
       qc.invalidateQueries({ queryKey: ["target-history"] });
     },
+  });
+}
+
+export function useMeasurements(range: InsightRange) {
+  return useQuery({
+    queryKey: ["measurements", range],
+    queryFn: () =>
+      api.get<{ measurements: BodyMeasurement[] }>(`/api/measurements?range=${range}`),
+  });
+}
+
+export function useAddMeasurement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { waist_cm: number }) => api.post<BodyMeasurement>("/api/measurements", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["measurements"] }),
+  });
+}
+
+export function useDeleteMeasurement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del(`/api/measurements/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["measurements"] }),
+  });
+}
+
+export function useStrengthPoints(range: InsightRange) {
+  return useQuery({
+    queryKey: ["strength", range],
+    queryFn: () => api.get<{ points: StrengthPoint[] }>(`/api/workouts/strength?range=${range}`),
   });
 }

@@ -243,6 +243,21 @@ export interface InsightsWorkout {
   duration_min: number | null;
 }
 
+/** A hand-logged tape measurement (cm). */
+export interface BodyMeasurement {
+  id: string;
+  measured_at: string;
+  date: string;
+  waist_cm: number | null;
+}
+
+/** Strongest set (estimated 1RM, kg) of one exercise on one day. */
+export interface StrengthPoint {
+  norm_name: string;
+  date: string;
+  e1rm_kg: number;
+}
+
 export interface InsightsBodyDay {
   date: string;
   weight_kg: number | null;
