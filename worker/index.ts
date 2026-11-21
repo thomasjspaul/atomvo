@@ -75,9 +75,14 @@ export default {
   async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(handleScheduled(event, env));
   },
-  async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(
-      handleWyzeEmail(message, env).catch((e) => console.error("wyze email failed", e)),
-    );
+  // Awaited rather than waitUntil so the import's result/error is logged inside the
+  // email event (wrangler tail / Workers Logs closed the event before it finished).
+  // Errors are caught so a bad export never bounces back to Wyze.
+  async email(message: ForwardableEmailMessage, env: Env) {
+    try {
+      await handleWyzeEmail(message, env);
+    } catch (e) {
+      console.error("wyze email failed", e);
+    }
   },
 } satisfies ExportedHandler<Env>;
