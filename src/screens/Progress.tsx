@@ -20,6 +20,7 @@ import { GymProgressCard } from "../components/workout/GymProgressCard";
 import { MuscleBalanceCard } from "../components/workout/MuscleBalanceCard";
 import { BodyComposition } from "../components/insights/BodyComposition";
 import { BodyFatMuscle } from "../components/insights/BodyFatMuscle";
+import { LeanFatSplit } from "../components/insights/LeanFatSplit";
 import { ScaleReadings } from "../components/insights/ScaleReadings";
 import { WHOOP_METRICS, hydrationRecoveryInsight, pairDays } from "../lib/insights";
 
@@ -299,6 +300,7 @@ export function Progress() {
                 </div>
               </div>
               <div className="space-y-4">
+                <LeanFatSplit body={bIns.body} imperial={imperial} />
                 <BodyComposition body={bIns.body} imperial={imperial} />
                 <BodyFatMuscle body={bIns.body} imperial={imperial} />
                 <ScaleReadings latest={bIns.body_latest} imperial={imperial} />
