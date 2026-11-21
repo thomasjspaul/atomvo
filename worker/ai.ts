@@ -32,7 +32,7 @@ async function callCohere(
   model: string,
   messages: unknown[],
   schema: { name: string; schema: Record<string, unknown> },
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; strict?: boolean } = {},
 ): Promise<Record<string, unknown>> {
   const res = await fetch(COHERE_URL, {
     method: "POST",
@@ -45,7 +45,9 @@ async function callCohere(
       model,
       messages,
       temperature: 0.2,
-      response_format: { type: "json_object", schema: schema.schema },
+      // strict=false: plain JSON mode, no schema-constrained decoding (fallback for 5xx).
+      response_format:
+        opts.strict === false ? { type: "json_object" } : { type: "json_object", schema: schema.schema },
     }),
   });
   if (!res.ok) {
@@ -56,7 +58,15 @@ async function callCohere(
     message?: { content?: Array<{ type?: string; text?: string }> };
   };
   const content = data.message?.content?.find((p) => p.type === "text")?.text ?? "{}";
-  return JSON.parse(content) as Record<string, unknown>;
+  try {
+    return JSON.parse(content) as Record<string, unknown>;
+  } catch (e) {
+    // Plain JSON mode can wrap the object in a code fence or a sentence.
+    const i = content.indexOf("{");
+    const j = content.lastIndexOf("}");
+    if (i >= 0 && j > i) return JSON.parse(content.slice(i, j + 1)) as Record<string, unknown>;
+    throw e;
+  }
 }
 
 const ITEM_SCHEMA = {
@@ -672,16 +682,33 @@ export async function suggestExerciseCleanup(
   const user = ["Logged names (sessions):", ...opts.logged.map((l) => `- ${l.name} (${l.sessions})`)].join(
     "\n",
   );
-  const raw = await callCohere(
-    env,
-    model,
-    [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    EXERCISE_CLEANUP_SCHEMA,
-    { timeoutMs: 75_000 },
-  );
+  const messages = [
+    { role: "system", content: system },
+    {
+      role: "user",
+      content: `${user}\n\nAnswer with JSON only: {"groups":[{"name":"...","members":["..."],"reason":"..."}]}`,
+    },
+  ];
+  // Cohere sometimes 500s/times out on this longer structured answer: retry once, then
+  // once more in plain JSON mode (no schema-constrained decoding). 4xx errors aren't retried.
+  const attempts = [{ strict: true }, { strict: true }, { strict: false }];
+  let raw: Record<string, unknown> | null = null;
+  let lastErr: unknown = null;
+  for (const a of attempts) {
+    try {
+      raw = await callCohere(env, model, messages, EXERCISE_CLEANUP_SCHEMA, {
+        timeoutMs: 45_000,
+        strict: a.strict,
+      });
+      break;
+    } catch (e) {
+      lastErr = e;
+      const m = (e as Error).message;
+      const retryable = (e as Error).name === "TimeoutError" || /Cohere 5\d\d/.test(m) || e instanceof SyntaxError;
+      if (!retryable) throw e;
+    }
+  }
+  if (!raw) throw lastErr;
   const groups = Array.isArray(raw.groups) ? raw.groups : [];
   return groups
     .map((g) => {
